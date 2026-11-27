@@ -596,6 +596,67 @@ def spor_ansigt():
     return out
 
 
+BIL_SIDER = {
+    # id: (dele der smeltes sammen til omridset, dele der tegnes som stiplede placeringslinjer indeni)
+    "bilV": (["hjelmV", "frontV", "rudeV", "stribeV", "gitter", "lygte1", "lygte2", "listV", "blinkV", "indtag"],
+             ["frontV", "rudeV", "stribeV", "gitter", "lygte1", "lygte2", "listV", "blinkV", "indtag"]),
+    "bilH": (["hjelmH", "frontH", "stribeH", "lygte3", "lygte4", "listH", "blinkH"],
+             ["frontH", "stribeH", "lygte3", "lygte4", "listH", "blinkH"]),
+}
+BIL_ERSTAT = ["hjelmV", "frontV", "hjelmH", "frontH"]      # karosseriet findes kun i de samlede skabeloner
+
+
+def bil_samlet(out, ABS, door_x0, draw):
+    """Bilen i to store skabeloner (venstre/højre): ét omrids med lygter, rude, striber m.m. som stiplede linjer.
+    Forneden går bilen 3 px ind under sneen (limkant)."""
+    import regioner as RG
+    RES = 30
+    for bid, (dele, marker) in BIL_SIDER.items():
+        if not all(k in ABS for k in dele):
+            continue
+        ekstra = [np.array(q, float) * CM_PR_PX for q in RG.BIL_UNDER_KJOLE.get(bid, [])]
+        allp = np.vstack([p for k in dele for p in ABS[k]] + ekstra)
+        mn = allp.min(0) - 1.0; mx = allp.max(0) + 1.5
+        size = (int((mx[0] - mn[0]) * RES) + 1, int((mx[1] - mn[1]) * RES) + 1)
+        im = Image.new("L", size, 0); dr = ImageDraw.Draw(im)
+        tr = lambda pts: [((x - mn[0]) * RES, (y - mn[1]) * RES) for x, y in pts]
+        for k in dele:
+            for p in ABS[k]:
+                dr.polygon(tr(p), fill=255)
+        # limkant under sneen: bånd fra snekanten 3 px ned, i bilens bredde
+        for k in [d for d in dele if d.startswith("front")]:
+            xa = min(p[:, 0].min() for p in ABS[k]) / CM_PR_PX; xb = max(p[:, 0].max() for p in ABS[k]) / CM_PR_PX
+            xs = np.arange(xa, xb + 1e-9, 0.5)
+            top = [(x * CM_PR_PX, (RG.sne_top(x) - 1.0) * CM_PR_PX) for x in xs]
+            bund = [(x * CM_PR_PX, (RG.sne_top(x) + 3.0) * CM_PR_PX) for x in xs[::-1]]
+            dr.polygon(tr(top + bund), fill=255)
+        for poly in RG.BIL_UNDER_KJOLE.get(bid, []):          # skjult under kjolen – lukker hullet mellem kjole og sne
+            dr.polygon(tr([(x * CM_PR_PX, y * CM_PR_PX) for x, y in poly]), fill=255)
+        m = np.asarray(im) > 0
+        # alt under snekanten + 3 px skæres væk (sneen ligger ovenpå)
+        xs_px = (np.arange(size[0]) / RES + mn[0]) / CM_PR_PX
+        ys_cm = np.arange(size[1])[:, None] / RES + mn[1]
+        graense = np.array([RG.sne_top(x) + 3.0 for x in xs_px])[None, :] * CM_PR_PX
+        m = m & (ys_cm <= graense)
+        m = ndi.binary_closing(np.pad(m, 10), iterations=int(0.25 * RES))[10:-10, 10:-10]
+        m = ndi.binary_fill_holes(m)
+        sc = ndi.gaussian_filter(m.astype(float), 0.03 * RES)
+        polys = select(contours(sc), None, holes=False)
+        omrids = [np.c_[q[:, 0] / RES + mn[0], q[:, 1] / RES + mn[1]] for q in [simplify(polys[0], 0.02 * RES)]]
+        mk = [p for k in marker for p in ABS[k]]
+        A = np.vstack(omrids); a0, a1 = A.min(0), A.max(0)
+        rel = lambda ps: [[[round(float(x - a0[0]), 3), round(float(y - a0[1]), 3)] for x, y in p] for p in ps]
+        out["dele"][bid] = {"w": round(float(a1[0] - a0[0]), 2), "h": round(float(a1[1] - a0[1]), 2),
+                            "polys": rel(omrids), "marks": rel(mk),
+                            "pos_cm": [round(float(a0[0] - door_x0), 1), round(float(a0[1]), 1)]}
+        for p in omrids:
+            pts = [(x / CM_PR_PX * 4, y / CM_PR_PX * 4) for x, y in p]
+            draw.line(pts + [pts[0]], fill=(255, 128, 0), width=3)
+        print(f"{bid:12s} {out['dele'][bid]['w']:6.1f} x {out['dele'][bid]['h']:6.1f} cm  (samlet af {len(dele)} dele, {len(mk)} stiplede linjer)")
+    for k in BIL_ERSTAT:
+        out["dele"].pop(k, None)
+
+
 def lys_samlet(out, ABS, door_x0, draw):
     """Lucia-lysene: stage og flamme smeltes sammen til ét omrids pr. lys, og alle 5 lys samles i én skabelon."""
     RES = 40                                              # pixel pr. cm
@@ -670,6 +731,7 @@ def main(only=None):
             pts = [(x / CM_PR_PX * 4, y / CM_PR_PX * 4) for x, y in p]
             d.line(pts + [pts[0]], fill=(0, 255, 255), width=2)
         print(f"{spec['id']:12s} {entry['w']:6.1f} x {entry['h']:6.1f} cm  ({len(polys)} kontur(er))")
+    bil_samlet(out, ABS, door_x0, d)
     if all(f"{a}{i}" in ABS for a in ("lys", "flamme") for i in range(1, 6)):
         lys_samlet(out, ABS, door_x0, d)
     import regioner as RG

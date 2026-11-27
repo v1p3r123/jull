@@ -88,9 +88,7 @@ reg("frontV", inc=[(80, 420)], mode="notwhite", seed=(80, 420),
     ext=[(55, 340), (196, 340), (196, 458), (55, 458)], force=[[(150, 340), (196, 340), (196, 452), (158, 412)]])
 reg("frontH", inc=[(310, 420)], mode="notwhite", seed=(310, 420),
     ext=[(250, 349), (323, 349), (323, 456), (250, 456)], force=[[(262, 349), (272, 349), (309, 453), (297, 453)]])
-reg("sne", inc=[(100, 460)], mode="white", seed=(100, 462), sat=80,
-    ext=[(55, 436), (134, 436), (134, 446), (136, 456), (162, 456), (164, 446), (196, 446), (198, 455), (230, 462), (262, 466),
-         (300, 463), (311, 455), (323, 450), (323, 467), (55, 467)])
+# "sne" er flyttet ned under bilens overkant (bruger kant_lodret) – se SNE_TOP
 
 
 # ------------------------------------------------------------------ baggrund (vandrette bånd over hele døren)
@@ -171,6 +169,33 @@ def bil_top(x):
     if x >= xh[0]:
         return float(np.interp(x, xh, yh))
     return float(np.interp(x, [xv[-1], xh[0]], [yv[-1], yh[0]]))
+
+
+# ------------------------------------------------------------------ sneen forneden: ét sammenhængende stykke
+# Snekanten måles hvor den ses (mørk lilla over, hvid sne under). Under kjolens slæb er den skjult –
+# der går sneen 6–8 px op under slæbet (limkant), så der ikke bliver et hul.
+_g = [(56, 446), (64, 445), (84, 440), (100, 440.5), (116, 449), (136, 458), (150, 458.5), (164, 456), (188, 449),
+      (196, 451), (208, 457), (220, 460), (240, 464), (244, 462.5)]
+_XS = np.arange(56.0, 244.01, 0.5)
+_YS = kant_lodret(_XS, lambda x: float(np.interp(x, *zip(*_g))), win=3.0, modus="fjern")
+for _a, _b in [(138, 160)]:                    # snefnug 12 ligger hen over kanten – lineær bro
+    _sel = (_XS >= _a) & (_XS <= _b)
+    _YS[_sel] = np.interp(_XS[_sel], [_a, _b], [_YS[_XS < _a][-1], _YS[_XS > _b][0]])
+_XR = np.arange(302.0, 322.01, 0.5)
+_YR = kant_lodret(_XR, lambda x: 450.5, win=3.0, modus="fjern")
+SNE_TOP = list(zip(_XS, _YS)) + [(250, 457.0), (265, 458.0), (285, 457.5), (298, 453.0)] + list(zip(_XR, _YR)) + [(323, float(_YR[-1]))]
+reg("sne", inc=[(100, 462)], mode="full", seed=(100, 464), smooth=0.02,
+    ext=[(55, float(_YS[0]))] + [(float(x), float(y)) for x, y in SNE_TOP] + [(323, 467), (55, 467)])
+
+
+# bilen under kjolen (skjult): venstre skabelon fortsætter ind under slæbet, så den mørke stribe
+# mellem kjolens kant og sneen (x ≈ 196–245) er dækket
+BIL_UNDER_KJOLE = {"bilV": [[(186, 341), (196, 341), (254, 446), (254, 470), (190, 470)]]}
+
+
+def sne_top(x):
+    xs, ys = np.array(SNE_TOP).T
+    return float(np.interp(x, xs, ys))
 
 
 LIM = 3.0                                     # limkant: bygningerne går 3 px (ca. 9 mm) ind under bilen

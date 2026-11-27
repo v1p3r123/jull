@@ -82,9 +82,10 @@ body{margin:0;font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;color:#1
 const S = window.SKAB, D = S.dele, META = S.meta || {};
 const EXTRA_NAVN = {sneV:"Venstre juletræ – sne-hætter", sneH:"Højre juletræ – sne-hætter",
   granV:"Venstre juletræ – hele træet med stamme", granH:"Højre juletræ – hele træet med stamme",
-  sloejfe:"Rødt bånd – bælte, knude og bånd i ét", lys:"Lucia-lys – alle 5 lys, hvert med stage og flamme i ét", sol:"Solen – hele skiven med udskårne striber"};
-const EXTRA_G = {sneV:"graner", sneH:"graner", granV:"graner", granH:"graner", sloejfe:"sloejfe", lys:"krans"};
-const EXTRA_LAG = {lys:11};
+  sloejfe:"Rødt bånd – bælte, knude og bånd i ét", bilV:"Bilen – hele venstre side (karosseri i ét stykke)",
+  bilH:"Bilen – hele højre side (karosseri i ét stykke)", lys:"Lucia-lys – alle 5 lys, hvert med stage og flamme i ét", sol:"Solen – hele skiven med udskårne striber"};
+const EXTRA_G = {sneV:"graner", sneH:"graner", granV:"graner", granH:"graner", sloejfe:"sloejfe", lys:"krans", bilV:"bil", bilH:"bil"};
+const EXTRA_LAG = {lys:11, bilV:6, bilH:6};
 const navn = id => EXTRA_NAVN[id] || (META[id] && META[id].navn) || id;
 const gruppe = id => (META[id] && META[id].g) || EXTRA_G[id] || "";
 const lag = id => (META[id] && META[id].lag) || EXTRA_LAG[id] || 4.5;
@@ -156,7 +157,8 @@ ids.forEach(id=>{
     const w=rot?t.h:t.w, h=rot?t.w:t.h;
     let circle=null;
     if(t.circle) circle = rot ? {cx:t.h-t.circle.cy, cy:t.circle.cx, r:t.circle.r} : t.circle;
-    items.push({id, kind:"hel", F, tile, rot, w, h, polys: rot?rotPolys(t.polys,t.h):t.polys, circle, t});
+    const marks = t.marks ? (rot?rotPolys(t.marks,t.h):t.marks) : null;    // stiplede placeringslinjer (fx bilens lygter)
+    items.push({id, kind:"hel", F, tile, rot, w, h, polys: rot?rotPolys(t.polys,t.h):t.polys, marks, circle, t});
   }
   if(t.wedge && mode!=="hel"){
     const R=t.wedge_R;
@@ -167,24 +169,26 @@ ids.forEach(id=>{
 /* Drej en hel skabelon 90° (bruges af den pladsbesparende pakning) */
 function drej(it){
   const c=it.circle ? {cx:it.h-it.circle.cy, cy:it.circle.cx, r:it.circle.r} : null;
-  return Object.assign({}, it, {rot:!it.rot, w:it.h, h:it.w, polys:rotPolys(it.polys,it.h), circle:c});
+  return Object.assign({}, it, {rot:!it.rot, w:it.h, h:it.w, polys:rotPolys(it.polys,it.h), marks:it.marks?rotPolys(it.marks,it.h):null, circle:c});
 }
 
 /* ===============================================================
    Tegne-operationer (fælles for skærm/SVG og PDF), alt i cm
    =============================================================== */
 const OUT = {fill:"#f1f1ef", stroke:"#111", sw:0.035};
+const MARK = {stroke:"#777", sw:0.03, dash:[0.3,0.2]};     // stiplet = placering, klip ikke
 function itemOps(it,x,y){
   const t=it.t, ops=[];
   if(it.kind==="hel"){
     ops.push({k:"path", polys:it.polys, x, y, fill:OUT.fill, stroke:OUT.stroke, sw:OUT.sw});
+    if(it.marks) ops.push({k:"path", polys:it.marks, x, y, fill:"none", stroke:MARK.stroke, sw:MARK.sw, dash:MARK.dash});
     if(t.ring_cm && it.circle) ops.push({k:"circle", cx:x+it.circle.cx, cy:y+it.circle.cy, r:it.circle.r+t.ring_cm, stroke:"#111", sw:0.03, dash:[0.25,0.18]});
     if(TAET){                                 // én kort linje under formen
       ops.push({k:"text", x, y:y+it.h+0.38, size:0.26, bold:true, s:navn(it.id)});
     } else {
       ops.push({k:"text", x, y:y+it.h+0.45, size:0.32, bold:true, s:navn(it.id)});
       ops.push({k:"text", x, y:y+it.h+0.85, size:0.28, color:"#555",
-        s:`${fmt(t.w)} × ${fmt(t.h)} cm${t.ring_cm?" · stiplet = sort ring":""}${it.rot?" · drejet 90°":""}`});
+        s:`${fmt(t.w)} × ${fmt(t.h)} cm${t.ring_cm?" · stiplet = sort ring":""}${t.marks?" · stiplet = placering af lygter, rude m.m. (klip ikke)":""}${it.rot?" · drejet 90°":""}`});
     }
   } else {
     const R=t.wedge_R, ax=x+0.2, ay=y+R+0.1;
@@ -297,6 +301,7 @@ function pageOps(pg,i,n){
     if(c<nx-1) inner.push({k:"rect", x:ox+F.W-OVER, y:oy, w:OVER, h:vh, fill:"#dcdcdc"});
     if(r<ny-1) inner.push({k:"rect", x:ox, y:oy+vh-OVER, w:F.W, h:OVER, fill:"#dcdcdc"});
     inner.push({k:"path", polys:it.polys, x:0, y:0, fill:"none", stroke:OUT.stroke, sw:OUT.sw});
+    if(it.marks) inner.push({k:"path", polys:it.marks, x:0, y:0, fill:"none", stroke:MARK.stroke, sw:MARK.sw, dash:MARK.dash});
     ops.push({k:"clip", x:0, y:TOP, w:F.W, h:vh, ox, oy, ops:inner});
     ops.push({k:"rectline", x:0, y:TOP, w:F.W, h:vh, stroke:"#999", sw:0.02});
     ops.push({k:"text", x:0.3, y:TOP+0.7, size:0.6, bold:true, color:"#999", s:`${L[r]}${c+1}`});
