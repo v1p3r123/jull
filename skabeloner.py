@@ -391,6 +391,159 @@ def flake_template(spec):
                         "wedge_R": round(Rmax, 2), "model": model}
 
 
+def spor_ansigt():
+    """Ansigtsdetaljer sporet i fotoet (fotopixel). Returnerer {id: [polygoner]} – iris og næse beregnes ud fra sporet."""
+    import regioner as RG
+    U = 20                                                       # forstørrelse (20 delpixel pr. fotopixel)
+    X1, Y1, X2, Y2 = 128, 145, 190, 188
+    A = np.asarray(IMG.crop((X1, Y1, X2, Y2)).resize(((X2 - X1) * U, (Y2 - Y1) * U), Image.BICUBIC)).astype(float)
+    HS, WS = A.shape[:2]
+
+    def raster(poly):
+        m = Image.new("L", (WS, HS), 0)
+        ImageDraw.Draw(m).polygon([((x - X1) * U, (y - Y1) * U) for x, y in poly], fill=255)
+        return np.asarray(m) > 0
+
+    hand = {k: raster(v[0]) for k, v in RG.ANSIGT_DELE.items()}
+    hand["mund"] = hand["overlaebe"] | hand["underlaebe"]
+    dist = {k: ndi.distance_transform_edt(~m) / U for k, m in hand.items()}     # afstand (fotopx) til håndkonturen
+    inde = {k: ndi.distance_transform_edt(m) / U for k, m in hand.items()}      # dybde inde i håndkonturen
+    to_px = lambda q: np.c_[q[:, 0] / U + X1, q[:, 1] / U + Y1]
+    out, masker = {}, {}
+    L = ndi.gaussian_filter(A.mean(2), 0.3 * U)
+    rows = np.arange(HS)[:, None]; xs = np.arange(WS)[None, :]
+
+    def snap(kurve, felt, grow):
+        """Aktiv kontur: hvert punkt (hver ca. 0,4 fotopx) flyttes vinkelret ud/ind til 50 %-kanten i feltet;
+        flytningerne glattes langs kurven, så formen følger fotoet uden at tage hvert slør-artefakt med."""
+        # jævn fordeling af punkter langs kurven
+        d = np.r_[0, np.cumsum(np.hypot(*np.diff(np.vstack([kurve, kurve[:1]]), axis=0).T))]
+        t = np.arange(0, d[-1], 0.4)
+        lukket = np.vstack([kurve, kurve[:1]])
+        P = np.c_[np.interp(t, d, lukket[:, 0]), np.interp(t, d, lukket[:, 1])]
+        n = len(P)
+        tan = np.roll(P, -1, 0) - np.roll(P, 1, 0)
+        nor = np.c_[tan[:, 1], -tan[:, 0]] / np.maximum(np.hypot(*tan.T), 1e-9)[:, None]
+        # normalen skal pege udad
+        areal = 0.5 * np.sum(P[:, 0] * np.roll(P[:, 1], -1) - np.roll(P[:, 0], -1) * P[:, 1])
+        if areal < 0:
+            nor = -nor
+        ss = np.arange(-grow - 1.0, grow + 0.001, 0.05)
+        flyt = np.zeros(n); ok = np.zeros(n, bool)
+        for i in range(n):
+            q = P[i] + ss[:, None] * nor[i]
+            v = ndi.map_coordinates(felt, [(q[:, 1] - Y1) * U, (q[:, 0] - X1) * U], order=1)
+            kr = np.nonzero((v[:-1] >= 0.5) & (v[1:] < 0.5))[0]   # indefra og ud: fra detalje til omgivelse
+            if len(kr):
+                j = kr[np.argmin(np.abs(ss[kr]))]                  # krydsningen nærmest håndkurven
+                a, b = v[j], v[j + 1]
+                flyt[i] = ss[j] + (a - 0.5) / (a - b) * 0.05; ok[i] = True
+        if not ok.any():
+            return P
+        idx = np.arange(n)
+        flyt = np.interp(idx, idx[ok], flyt[ok], period=n)       # huller udfyldes fra naboerne
+        flyt = ndi.median_filter(flyt, size=5, mode="wrap")       # enkelte afvigere (spidser) fjernes
+        w = np.exp(-0.5 * (np.arange(-6, 7) / 2.0) ** 2); w /= w.sum()   # glatning over ca. ±1 fotopx
+        flyt = np.convolve(np.r_[flyt[-6:], flyt, flyt[:6]], w, "same")[6:-6]
+        flyt = np.clip(flyt, -grow, grow)
+        return P + flyt[:, None] * nor
+
+    def skillelinje(b, o):
+        """Lyseste linje mellem bryn b og øje o (rækkeindeks pr. kolonne)."""
+        cols, ys = [], []
+        for x in range(WS):
+            hb, ho = np.nonzero(hand[b][:, x])[0], np.nonzero(hand[o][:, x])[0]
+            if not len(hb) or not len(ho):
+                continue
+            ya, yb = int(hb.mean()), int(ho.min() + 1.0 * U)       # fra bryn-midten til lidt inde i øjet
+            if yb <= ya + 2:
+                continue
+            cols.append(x); ys.append(ya + int(np.argmax(L[ya:yb, x])))
+        cf = np.polyfit(cols, ys, 2)
+        return np.polyval(cf, np.arange(WS))[None, :]
+
+    for k, c in RG.ANSIGT_SPOR.items():
+        region = dist[k] <= c["grow"]
+        if "skil" in c:
+            lin = skillelinje(*c["skil"])
+            region &= (rows <= lin) if k == c["skil"][0] else (rows >= lin)
+        if "maxx" in c:
+            region &= xs <= (c["maxx"] - X1) * U
+        andre = [o for o in hand if o != k and not (k == "mund" and o in ("overlaebe", "underlaebe"))]
+        if c.get("ref") == "haar":
+            # øret: kanten mod det mørke hår; mod ansigtet stopper det ved håndkonturens højre kant (skyggestregen)
+            ref = np.median(A[(dist[k] > 0.3) & (dist[k] < 3) & (A.mean(2) < 70)], 0)
+            hojre = np.where(hand[k].any(1), (hand[k] * np.arange(WS)[None, :]).max(1), -1)[:, None]
+            region &= xs <= hojre
+        else:
+            ring = (dist[k] > c["grow"] + 1) & (dist[k] < c["grow"] + 3.5)
+            for o in andre:
+                ring &= dist[o] > 1
+            ref = np.median(A[ring], 0)                          # den omgivende hud
+        sc = ndi.gaussian_filter(np.sqrt(((A - ref) ** 2).sum(-1)), 0.25 * U)
+        lvl = 0.5 * np.percentile(sc[hand[k] & (inde[k] > 0.6)], 60)   # halvvejs mellem omgivelse og detalje
+        f = sc / (2 * lvl)                                       # 0,5 = kanten
+        if c.get("hvid"):
+            B = ndi.gaussian_filter(A[..., 2], 0.25 * U)
+            top = np.percentile(B[hand[k]], 99)
+            f = np.maximum(f, (B - ref[2]) / (top - ref[2]))     # det hvide: halvvejs mellem hudens og det hvides blå
+        felt = ndi.gaussian_filter(np.where(region, f, 0.0), 0.1 * U)
+        start = RG.ANSIGT_DELE[k][0] if k != "mund" else RG.MUND
+        p = (snap(np.array(start, float), felt, c["grow"]) - [X1, Y1]) * U
+        m = Image.new("L", (WS, HS), 0); ImageDraw.Draw(m).polygon([tuple(v) for v in p], fill=255)
+        # rens: små løkker ved spidse ender (hvor normalerne vender) fjernes med en åbning på 0,25 fotopx
+        mk = ndi.binary_opening(np.asarray(m) > 0, structure=np.ones((3, 3)), iterations=int(0.25 * U / 2))
+        p = simplify(select(contours(ndi.gaussian_filter(mk.astype(float), 0.08 * U)), None, holes=False)[0], 0.02 * U)
+        masker[k] = mk
+        out[k] = [to_px(p)]
+        print(f"   spor {k:9s} {len(p)} punkter")
+
+    # munden deles ved mundlinjen (den mørkeste linje mellem læberne); underlæben går 1 fotopx op under overlæben
+    m = masker.pop("mund"); out.pop("mund")
+    cols = np.nonzero(m.sum(0) > 0.8 * U)[0]
+    yy = np.array([np.argmin(np.where(m[:, x], L[:, x], 1e9)) for x in cols])
+    kant = (m.sum(0)[cols] > 1.6 * U)                            # kun hvor læberne er tykke nok til at have en mundlinje
+    cf = np.polyfit(cols[kant], yy[kant], 3)
+    linje = np.polyval(cf, np.arange(WS))[None, :]
+    for k, sel in (("overlaebe", rows < linje), ("underlaebe", rows > linje - 1.0 * U)):
+        mm = ndi.gaussian_filter((m & sel).astype(float), 0.1 * U)
+        p = simplify(select(contours(mm), None, holes=False)[0], 0.03 * U)
+        out[k] = [to_px(p)]
+
+    # iris: cirkel mellem det hvide på hver side af øjet (50 %-kanten mod det hvide), bunden ved nederste øjenlåg
+    B = ndi.gaussian_filter(A[..., 2], 0.2 * U)
+    for side in "VH":
+        eye = masker["oeje" + side]
+        lo, hi = np.percentile(B[eye], 5), np.percentile(B[eye], 99.5)
+        hvid = (B > (lo + hi) / 2) & eye                         # det hvide: halvvejs mellem iris og det hvideste
+        lab, n = ndi.label(hvid)
+        st = sorted(range(1, n + 1), key=lambda i: -(lab == i).sum())[:2]
+        if len(st) < 2 or min((lab == i).sum() for i in st) < 0.3 * U * U:
+            print(f"   iris{side}: kun ét hvidt felt – håndmålt cirkel bruges"); continue
+        v, h = sorted(st, key=lambda i: np.nonzero(lab == i)[1].mean())
+        # iris' kant = de to hvide felters inderkanter, målt i rækken hvor de står tættest på hinanden
+        best = None
+        for y in range(HS):
+            a, b = np.nonzero(lab[y] == v)[0], np.nonzero(lab[y] == h)[0]
+            if len(a) and len(b) and (best is None or b.min() - a.max() < best[2] - best[1]):
+                best = (y, a.max(), b.min())
+        y0, vx, hx = best
+        cx, r = (vx + hx) / 2, (hx - vx) / 2
+        cy = y0                                                   # iris' vandrette diameter ligger hvor det hvide er tættest
+        out["iris" + side] = [np.array([((cx + r * math.cos(t)) / U + X1, (cy + r * math.sin(t)) / U + Y1)
+                                        for t in np.linspace(0, 2 * math.pi, 48, endpoint=False)])]
+        print(f"   iris{side}: centrum ({cx / U + X1:.1f}, {cy / U + Y1:.1f}), radius {r / U:.2f} px")
+    # iris beskæres af øjenlågene: kun den del, der ligger inde i øjet, kommer med
+    for side in "VH":
+        k = "iris" + side
+        cirk = out.get(k, RG.ANSIGT_DELE[k])[0]
+        m = Image.new("L", (WS, HS), 0)
+        ImageDraw.Draw(m).polygon([((x - X1) * U, (y - Y1) * U) for x, y in cirk], fill=255)
+        mm = ndi.gaussian_filter(((np.asarray(m) > 0) & masker["oeje" + side]).astype(float), 0.05 * U)
+        out[k] = [to_px(simplify(select(contours(mm), None, holes=False)[0], 0.02 * U))]
+    return out
+
+
 def lys_samlet(out, ABS, door_x0, draw):
     """Lucia-lysene: stage og flamme smeltes sammen til ét omrids pr. lys, og alle 5 lys samles i én skabelon."""
     RES = 40                                              # pixel pr. cm
@@ -468,7 +621,10 @@ def main(only=None):
     if all(f"{a}{i}" in ABS for a in ("lys", "flamme") for i in range(1, 6)):
         lys_samlet(out, ABS, door_x0, d)
     import regioner as RG
-    for rid, rp in {**RG.RINGE, **RG.ANSIGT_DELE}.items():
+    ANSIGT = dict(RG.ANSIGT_DELE)
+    if not only or any(k in only for k in ANSIGT):
+        ANSIGT.update(spor_ansigt())                          # sporede kanter erstatter håndkonturerne
+    for rid, rp in {**RG.RINGE, **ANSIGT}.items():
         if only and rid not in only:
             continue
         polys = [np.array([(x * CM_PR_PX, y * CM_PR_PX) for x, y in q]) for q in rp]

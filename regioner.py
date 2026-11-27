@@ -219,3 +219,26 @@ ANSIGT_DELE = {
     "oere": [glat([(138.5, 154.6), (140.5, 153.7), (142.5, 154.2), (143.8, 156.0), (144.2, 159.0), (143.8, 162.5), (142.6, 165.2),
                    (141.0, 166.8), (139.5, 166.4), (138.8, 164.5), (137.8, 161.5), (136.8, 158.0), (137.2, 155.8)])],
 }
+
+# munden samlet (udgangspunkt for sporingen; deles bagefter ved mundlinjen)
+MUND = glat([(158.2, 177.7), (159.6, 176.5), (162.0, 175.6), (164.2, 175.9), (165.4, 175.5), (167.5, 175.7), (169.5, 176.8),
+             (170.8, 178.2), (169.8, 179.8), (168.0, 181.0), (165.5, 181.6), (163.0, 181.1), (160.5, 179.8)], n=8)
+
+# Sporing af ansigtsdetaljerne direkte i fotoet (skabeloner.py: spor_ansigt).
+# Håndkonturerne ovenfor bruges kun som søgeområde: kanten lægges der, hvor farven er præcis halvvejs
+# mellem den omgivende hud og detaljens egen farve (50 %-kanten i det slørede foto).
+#   grow = hvor langt (fotopixel) uden for håndkonturen kanten må ligge
+#   riv  = nabodetaljer – en pixel hører til den detalje, hvis håndkontur den ligger nærmest (snitlinje bryn/øje)
+#   ref  = "hud" (detalje mod hud) eller "haar" (øret mod det mørke hår)
+ANSIGT_SPOR = {
+    "brynV": dict(grow=1.2, skil=("brynV", "oejeV")),
+    "brynH": dict(grow=0.8, skil=("brynH", "oejeH"), maxx=182.0),
+    "oejeV": dict(grow=1.2, skil=("brynV", "oejeV"), hvid=True),
+    "oejeH": dict(grow=0.8, skil=("brynH", "oejeH"), hvid=True, maxx=181.0),
+    "naesebor": dict(grow=1.0),
+    "mund": dict(grow=1.2),                                  # spores samlet og deles ved mundlinjen
+    "oere": dict(grow=1.2, ref="haar"),
+}
+# skil = (bryn, øje): de to flyder sammen i fotoet – snitlinjen lægges i den lyseste linje mellem dem
+# hvid = øjets hvide tælles med (det slørede hvide spores i blå-kanalen, som huden næsten ikke har)
+# maxx = højre grænse (ansigtskanten/håret ved højre øje)
