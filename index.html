@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juledøren · GTA VI × Lucia – vejledning</title>
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--txt:#111;--muted:#777;--soft:#f0f0ee;--line:#e4e4e1;--r:18px;--ease:cubic-bezier(.2,.7,.2,1)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Inter","Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased}
+header{max-width:1300px;margin:0 auto;padding:22px 28px 6px}
+h1{margin:0;font-size:1.3rem;letter-spacing:-.02em}
+h1 small{display:block;font-size:.82rem;font-weight:400;color:var(--muted);margin-top:3px}
+main{max-width:1300px;margin:0 auto;padding:16px 28px 80px}
+.grid{display:grid;grid-template-columns:minmax(300px,520px) 1fr;gap:24px;align-items:start}
+.sticky{position:sticky;top:20px}
+@media(max-width:900px){.grid{grid-template-columns:1fr} .sticky{position:static} main{padding:14px 14px 60px} header{padding:16px 14px 0}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:1.15rem;letter-spacing:-.02em}
+
+.doorwrap{position:relative;border-radius:16px;overflow:hidden;user-select:none;box-shadow:0 20px 50px -20px rgba(0,0,0,.35);background:#000}
+.doorwrap img{display:block;width:100%}
+.doorwrap svg{position:absolute;inset:0;width:100%;height:100%}
+.hs{fill:rgba(255,255,255,0);stroke:rgba(255,255,255,0);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill .2s,stroke .2s}
+.hs:hover{fill:rgba(255,255,255,.28);stroke:#fff}
+.hs.sel{fill:rgba(255,255,255,.35);stroke:#fff;stroke-width:2.5;filter:drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1px #000)}
+.tooltip{position:fixed;pointer-events:none;background:#111;color:#fff;font-size:.78rem;padding:5px 10px;border-radius:999px;opacity:0;transition:opacity .15s;z-index:40;white-space:nowrap}
+
+.empty{color:var(--muted);text-align:center;padding:50px 10px}
+.empty .big{font-size:2.4rem;margin-bottom:6px}
+.kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:4px}
+.ptitle{font-size:1.5rem;font-weight:700;letter-spacing:-.03em;margin:0 0 12px;line-height:1.15}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.fact{background:var(--soft);border-radius:12px;padding:10px 14px}
+.fact .l{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.fact .v{font-size:1.05rem;font-weight:650;margin-top:2px;display:flex;gap:6px;align-items:center}
+.dot{width:20px;height:20px;border-radius:50%;border:1px solid rgba(0,0,0,.15);display:inline-block}
+.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);line-height:1.5}
+.steps li:last-child{border:none}
+.steps li:before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:.72rem;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.note{background:var(--soft);border-radius:12px;padding:10px 14px;margin:10px 0;font-size:.9rem}
+.note.warn{background:#111;color:#fff}
+.mats{padding-left:18px;margin:6px 0;font-size:.9rem;columns:2;column-gap:20px}
+@media(max-width:600px){.mats{columns:1}}
+h3{font-size:1rem;margin:18px 0 6px}
+.tpl{border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.tpl svg{width:130px;height:130px;background:var(--soft);border-radius:10px;flex:none}
+.tpl .txt{flex:1;min-width:200px;font-size:.9rem}
+.tpl .txt b{display:block;margin-bottom:4px}
+.tpl .btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ptag{display:inline-block;border:1px solid #111;border-radius:999px;padding:0 8px;font-size:.75rem;font-weight:700;margin-left:4px}
+.ptag.a3{background:#ffd23f;border-color:#ffd23f}
+a.btn{text-decoration:none;display:inline-block}
+.navrow{display:flex;justify-content:space-between;gap:8px;margin-top:18px}
+.btn{background:#111;color:#fff;border:1px solid #111;border-radius:999px;padding:8px 16px;cursor:pointer;font:inherit;font-size:.84rem;transition:transform .15s var(--ease)}
+.btn:hover{transform:translateY(-1px)}
+.btn.sec{background:#fff;color:#111;border-color:var(--line)}
+
+.phase{padding:4px 0 4px 20px;margin:18px 0;border-left:2px solid #111}
+.phase h3{margin:0 0 6px}
+.phase li{margin:5px 0;line-height:1.5}
+.muted{color:var(--muted)}
+.layerlist{counter-reset:l;list-style:none;padding:0}
+.layerlist li{counter-increment:l;padding:8px 0 8px 40px;position:relative;border-bottom:1px solid var(--line)}
+.layerlist li:before{content:counter(l);position:absolute;left:0;top:7px;width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
+.layerlist a{color:#111;cursor:pointer;text-underline-offset:3px}
+.check{list-style:none;padding:0}
+.check li{padding-left:28px;position:relative}
+.check li:before{content:"";position:absolute;left:0;top:3px;width:15px;height:15px;border:1.5px solid #111;border-radius:4px}
+.lagbox{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:14px 0;break-inside:avoid}
+.lagbox h4{margin:0 0 4px;font-size:1rem;display:flex;align-items:center;gap:10px}
+.lagbox h4 .n{width:26px;height:26px;border-radius:50%;background:#111;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;flex:none}
+.lagbox ul{margin:6px 0;padding-left:18px;font-size:.92rem}
+.ptab{width:100%;border-collapse:collapse;font-size:.86rem;margin-top:8px}
+.ptab th{text-align:left;font-weight:600;color:var(--muted);border-bottom:1px solid #111;padding:5px 6px}
+.ptab td{border-bottom:1px solid var(--line);padding:5px 6px}
+.ptab td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ptab td.ok{width:22px}.ptab td.ok:before{content:"";display:inline-block;width:13px;height:13px;border:1.5px solid #111;border-radius:3px}
+.ptab a{color:#111;cursor:pointer;text-underline-offset:3px}
+@media print{
+  body.printfinal header, body.printfinal .grid, body.printfinal #guide, body.printfinal .noprint, body.printfinal .tooltip{display:none!important}
+  body.printfinal #final{margin:0!important;box-shadow:none;border:none;padding:0}
+  .ptab tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Juledøren — GTA VI × Lucia<small>Dør: 80 × 200 cm · Klik på en form på døren for at se, hvordan den laves af papir – med skabeloner i 1:1</small></h1>
+</header>
+<main>
+  <div class="grid">
+    <div class="sticky">
+      <div class="doorwrap">
+        <img src="doer.png" alt="Juledør med GTA VI-tema og Lucia-figur">
+        <svg id="hot" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="panel">
+        <div class="empty">
+          <div class="big">↖</div>
+          <p><b style="color:#111">Klik direkte på døren</b><br>Hvert snefnug, lys, bogstav, vindue og hver lygte er sin egen del<br>med mål i cm og trin-for-trin-vejledning.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="guide" style="margin-top:24px">
+    <h2>Samlet vejledning – sådan sættes døren sammen</h2>
+    <p>Hovedidéen: <b>Alt bygges på gulvet på ét stort stykke kraftpapir på 80 × 200 cm</b> – ikke direkte på døren. Så kan flere arbejde samtidig, og selve ophængningen tager kun ca. 20 minutter.</p>
+
+    <div class="phase"><h3>1 · Underlag og skabeloner</h3>
+      <ol>
+        <li>Klip kraftpapir på 80 × 200 cm – det er <b>underlaget</b>. Klip hullet til jeres dørhåndtag ud med det samme (der hvor det sidder på jeres dør).</li>
+        <li><b>Motivet fylder 80 × <span class="motivh"></span> cm</b> – præcis billedets proportioner, så alle skabeloner passer 1:1. Læg motivet nederst på døren (sneen ved gulvet). De øverste ca. <span class="restH"></span> cm bliver ekstra lilla himmel med flere snefnug.</li>
+        <li>Tegn et gitter på 10 × 10 felter over motivets område (hvert felt er 8 × <span class="feltH"></span> cm).</li>
+        <li>Tegn felt for felt omridset af de store former over fra billedet: figuren, bilen, logoet, solen, byen og juletræerne.</li>
+        <li>Kalkér de store former over på bagepapir – de bliver skabeloner.</li>
+      </ol>
+      <div class="note">Har I en projektor? Projicér billedet op på kraftpapiret og tegn direkte efter – det er hurtigere.</div>
+    </div>
+    <div class="phase"><h3>Skabeloner til print (1:1)</h3>
+      <p><b>Alle 106 dele har en skabelon</b>, tegnet direkte efter billedet – også kjolens dele, hår, ansigt, hænder, bygninger, sol, baggrund og bilens flader. Hvor en del ligger delvist <i>under</i> en anden (fx kølerhjelmen under kjolen), går skabelonen lidt ind under den forreste del, så der er noget at lime på.</p>
+      <p>Udskriv i <b>100 %</b> (ikke “tilpas til side”), og tjek kontrolstregen på 5 cm nederst på hver side.</p>
+      <p>
+        <a class="btn" target="_blank" href="skabeloner.html">Vis alle skabeloner</a>
+        <a class="btn" target="_blank" href="skabeloner.html?pdf=1">Download alle som PDF</a>
+        <a class="btn sec" target="_blank" href="skabeloner.html?pdf=a4">PDF kun A4-sider</a>
+        <a class="btn sec" target="_blank" href="skabeloner.html?pdf=a3">PDF kun A3-sider</a>
+      </p>
+      <p id="grpLinks"></p>
+      <div class="note warn"><b>A3-skabeloner:</b> Dele, der er for store til A4 (fx kjolens slæb, solen, baggrunden og bilens front), udskrives på <b>A3</b>. De er markeret med en <b>gul A3-mærkat</b> – både her på siden og øverst på selve arket. Er en del større end ét A3-ark, deles den på flere A3-ark med 1 cm grå overlap, som tapes sammen.</div>
+      <div class="note">Har I ikke en A3-printer? Et kopicenter/bibliotek kan printe A3, eller brug PDF'en “kun A4-sider” til de små dele og få A3-PDF'en printet ét sted.</div>
+    </div>
+    </div>
+    <div class="phase"><h3>2 · Lav alle dele</h3>
+      <p>Klik på hver del på døren og følg trinene. Lav delene færdige <b>løst</b>, og skriv delens navn på bagsiden med blyant.</p>
+    </div>
+    <div class="phase"><h3>3 · Saml døren</h3>
+      <p>Når alle dele er færdige, følger I <a href="#final" style="color:#111"><b>den store samlevejledning</b></a> herunder – med præcis placering i cm for hver eneste del.</p>
+    </div>
+  </div>
+
+  <div class="card" id="final" style="margin-top:24px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">Den store samlevejledning – når alle dele er færdige</h2>
+      <button class="btn sec noprint" id="printFinal">Print samlevejledningen</button>
+    </div>
+    <p>Afsæt <b>ca. 2½ time (to dobbeltlektioner er sikrest)</b> til samlingen og ca. 20 min til ophængningen. Alt samles liggende på gulvet på underlaget – først til sidst hænges det hele op i ét stykke.</p>
+
+    <div class="phase"><h3>A · Før I starter – tjekliste</h3>
+      <ul class="check">
+        <li>Alle dele er færdige og har navnet skrevet på bagsiden med blyant (fx “Snefnug 7”). Læg dem i bunker efter lag (se tabellerne herunder).</li>
+        <li>Underlaget: kraftpapir 80 × 200 cm med lilla baggrund og håndtagshul.</li>
+        <li>Værktøj: limstift <b>og</b> hobbylim, dobbeltklæbende tape, skumpuder (3D), malertape, tommestok eller målebånd, lang lineal, blyant, viskelæder, saks og et billede af originalen (print eller tablet).</li>
+        <li>Gulvplads på mindst 1,5 × 3 m – ryd et hjørne af klassen eller brug gangen.</li>
+        <li>Mål jeres rigtige dør: sidder håndtaget, låsen og dørpumpen samme sted som på underlaget?</li>
+      </ul>
+    </div>
+
+    <div class="phase"><h3>B · Roller (6 personer ad gangen)</h3>
+      <ul>
+        <li><b>Holdleder</b> – læser trinene op og krydser delene af i tabellen.</li>
+        <li><b>2 målere</b> – sætter blyantskrydserne med tommestok (én måler fra venstre, én fra toppen).</li>
+        <li><b>2 limere</b> – lægger delene på plads og limer dem.</li>
+        <li><b>Kontrollant</b> – sammenligner med billedet efter hvert lag og tager et foto ovenfra.</li>
+      </ul>
+      <div class="note">Skift hold efter hvert 2.–3. lag, så alle i klassen er med til samlingen.</div>
+    </div>
+
+    <div class="phase"><h3>C · Gør underlaget klar</h3>
+      <ol>
+        <li>Læg underlaget på gulvet med <b>toppen væk fra jer</b> og tape de fire hjørner fast med malertape, så det ikke glider.</li>
+        <li>Mål <b><span class="restH"></span> cm</b> ned fra toppen og tegn en svag vandret blyantslinje: her begynder motivet. Alt over linjen er ekstra himmel.</li>
+        <li>Alle mål i tabellerne er til delens <b>midtpunkt</b>, målt fra underlagets <b>venstre kant</b> og fra <b>toppen</b>.</li>
+        <li>Placér sådan: måleren fra venstre lægger tommestokken vandret, måleren fra toppen lodret – der hvor de mødes, sætter I et lille blyantskryds og skriver delens nummer ved siden af.</li>
+        <li>Sæt krydserne for ét lag ad gangen – ellers bliver der for mange streger.</li>
+      </ol>
+    </div>
+
+    <div class="phase"><h3>D · Tør-prøve før lim</h3>
+      <p>Før hvert lag limes: læg alle dele i laget på plads <b>uden lim</b>. Kontrollanten tager et foto ovenfra og sammenligner med billedet. Først når det passer, limes delene – én ad gangen, så resten ikke flytter sig.</p>
+    </div>
+
+    <div class="phase"><h3>E · Saml lag for lag (bagfra og frem)</h3>
+      <p>Det, der ligger længst væk, kommer på først. Klik på en del for at se den igen.</p>
+      <div id="finalLayers"></div>
+    </div>
+
+    <div class="phase"><h3>F · Slutkontrol på gulvet</h3>
+      <ul class="check">
+        <li>Ræk hånden hen over hele værket: sidder alle kanter fast? Lim løse hjørner med limstift.</li>
+        <li>Stil jer på en stol og tag et foto ovenfra – ligner det billedet? Ret nu, ikke når det hænger.</li>
+        <li>Lad limen tørre i mindst 30 minutter (gerne til næste dag), før I ruller værket op.</li>
+        <li>Pak de løse 3D-dele (flammer, sløjfe, forreste snefnug) i en kasse – de sættes først på døren til sidst.</li>
+      </ul>
+    </div>
+
+    <div class="phase"><h3>G · Transport og ophængning (4 personer)</h3>
+      <ol>
+        <li>Rul værket forsigtigt op <b>fra bunden mod toppen med billedet udad</b>, så 3D-delene ikke bliver mast. Toppen ligger nu yderst.</li>
+        <li>Rengør døren med en tør klud (ellers holder tapen ikke).</li>
+        <li>To personer på stole holder rullen øverst ved døren og fastgør toppen med monteringstape i hjørnerne og på midten.</li>
+        <li>Rul langsomt nedad, mens to personer glatter ud fra midten mod siderne og taper kanterne for hver ca. 30 cm.</li>
+        <li>Klip håndtagshullet til, hvis det ikke passer helt, og tape kanten rundt om håndtaget pænt.</li>
+        <li>Sæt de løse 3D-dele på med skumpuder: flammerne på lysene, sløjfen og de forreste snefnug.</li>
+        <li>Luk døren et par gange: åbner og lukker den, og virker håndtag og lås? Intet må dække dørpumpen.</li>
+        <li>Tag et klassebillede foran døren!</li>
+      </ol>
+    </div>
+
+    <div class="phase"><h3>H · Hvis noget går galt</h3>
+      <ul>
+        <li><b>En del er for stor eller lille:</b> placér den efter midtpunktet alligevel – en lille forskel ses ikke på afstand. Er det meget, så lav den om med skabelonen.</li>
+        <li><b>Limen bobler eller papiret slår sig:</b> brug limstift på store flader og hobbylim kun i små klatter.</li>
+        <li><b>En del er limet forkert:</b> lad limen tørre, og læg så en ny del ovenpå – det er nemmere end at pille.</li>
+        <li><b>Tapen slipper døren:</b> brug monteringstape eller Blu Tack i stedet for malertape (spørg pedellen, hvad der må bruges).</li>
+        <li><b>Der mangler en del:</b> spring den over og sæt den på bagefter – alle dele har deres egen placering i tabellen.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+<div class="tooltip" id="tooltip"></div>
+
+<script src="skabeloner/skabeloner.js"></script>
+<script>
+/* =====================================================================
+   GEOMETRI – koordinater i % af fotoet. Dørbladet: x 14,5–91,5 %, y 0–99 %.
+   ===================================================================== */
+const DOOR = {x1:14.5,x2:91.5,y1:0,y2:99};
+const K = 472/353;   // fotoets højde/bredde – bruges til runde former
+
+/* ---------- Grupper (lag = rækkefølge ved samling) ---------- */
+const G = {
+ baggrund:{navn:"Baggrund", lag:1, st:"A",
+   mat:[["Kraftpapir, rulle (underlag)",1,"rulle",0],["Karton, lilla 50×70",4,"ark",1],["Karton, magenta/pink 50×70",3,"ark",1],["Karton, orange 50×70",2,"ark",1],["Karton, mørk lilla 50×70",3,"ark",1],["Pastelkridt / oliekridt",1,"pakke",0],["Køkkensvamp",2,"stk",0]],
+   tips:["Billigst og mest ensartet: brug en lilla kraftpapirrulle som grundfarve, og læg kun pink og orange ovenpå."]},
+ sol:{navn:"Retro-solen", lag:2, st:"A", mat:[["Karton, gul 50×70",2,"ark",1],["Karton, rød-orange 50×70",1,"ark",1]],
+   tips:["Striberne gør solen til en ægte 80'er-/Miami-sol. Hold afstanden mellem striberne helt ens – brug en lineal."]},
+ skyline:{navn:"Skyline (bygninger og vinduer)", lag:3, st:"A", mat:[["Karton, violet/lyslilla 50×70",2,"ark",1],["Karton, mørk lilla 50×70",2,"ark",1],["Karton, lys lilla/pink (vinduer)",0.5,"ark",1]],
+   tips:["Byen står på begge sider af figuren. De lyse bygninger står bagerst, de mørke forrest."]},
+ graner:{navn:"Juletræer", lag:4, st:"B", mat:[["Karton, mørkegrøn 50×70",4,"ark",1],["Karton, hvid 50×70 (sne)",2,"ark",1],["Karton, mørkebrun (stamme)",0.5,"ark",1],["Grå farveblyant",1,"stk",0]],
+   tips:["Lim træets etager nedefra og op – hver etage overlapper den nedenunder, så det bliver et rigtigt grantræ.","Lim kun i midten af hver etage, så kanterne løfter sig lidt (3D)."]},
+ logo:{navn:"GTA VI-logo", lag:5, st:"C", mat:[["Karton, hvid 50×70",2,"ark",1],["Karton, sort 50×70",2,"ark",1],["Karton, lilla + pink + orange (VI)",1,"ark",1],["Hobbykniv + skæreplade",1,"sæt",0]], tips:["Logoet genkendes først – brug god tid på lige linjer og skarpe kanter."]},
+ bil:{navn:"Bilen", lag:6, st:"F", mat:[["Karton, lilla 50×70",4,"ark",1],["Karton, mørk violet 50×70",2,"ark",1],["Karton, sort 50×70",1,"ark",1],["Papptallerkener eller gamle CD'er",4,"stk",0],["Lilla folie / glanspapir",1,"ark",0],["Karton, orange",0.3,"ark",1],["Karton, pink 50×70",1,"ark",1]], tips:["Folie eller CD'er i lygterne fanger lyset i gangen og får bilen til at skinne."]},
+ sne:{navn:"Sne forneden", lag:7, st:"B", mat:[["Silkepapir, hvidt",10,"ark",0],["Glimmer, hvid/sølv",1,"stk",0]], tips:[]},
+ kjole:{navn:"Kjolen", lag:8, st:"E", mat:[["Hvidt papir på rulle",1,"rulle",0],["Lysegrå pastelkridt",1,"pakke",0],["Karton, lysegrå 50×70",1,"ark",1]], tips:["Krøllet og glattet papir ligner stof – det er hele hemmeligheden bag kjolen."]},
+ hud:{navn:"Ansigt, hår & hænder", lag:9, st:"D", mat:[["Karton, brun/karamel (hud) 50×70",1,"ark",1],["Karton/silkepapir, mørkebrun + rødbrun",2,"ark",1],["Farveblyanter + sort fineliner",1,"sæt",0],["Guldpapir",1,"ark",0]], tips:["Giv delene til klassens bedste tegnere (* på holdlisten). Blyant først, tusch til sidst."]},
+ sloejfe:{navn:"Rød sløjfe", lag:10, st:"E", mat:[["Crepepapir, rødt",1,"rulle",0],["Karton, rød 50×70",1,"ark",1]], tips:["Rød mod hvid er billedets stærkeste kontrast – sløjfen må gerne være lidt større end på billedet."]},
+ krans:{navn:"Lucia-krans", lag:11, st:"D", mat:[["Karton, mørkegrøn 50×70",1,"ark",1],["Karton, rød (bær)",0.3,"ark",1],["Toiletruller / hvidt karton (lys)",5,"stk",0],["Karton, gul + orange",0.5,"ark",1],["Hullemaskine",1,"stk",0]], tips:["Lysene er Lucia-pointen i hele designet – de må gerne stikke lidt ud fra døren."]},
+ pistol:{navn:"Pistolen", lag:12, st:"D", mat:[["Karton, sort",0.3,"ark",1],["Sølvtusch",1,"stk",0],["Skumpuder (3D)",1,"pakke",0]], tips:[],
+   warn:"Tjek med læreren, om pistolen må være med. Alternativer i samme håndstilling: et Lucia-lys, en slikstok, en smartphone eller en julestjerne."},
+ snefnug:{navn:"Snefnug", lag:13, st:"B", mat:[["Kopipapir, hvidt A4",15,"ark",1],["Hvidt karton A4",4,"ark",1]], tips:["Perfekt opgave til dem, der bliver tidligt færdige."]},
+ haandtag:{navn:"Dørhåndtag", lag:14, st:"A", mat:[["Gaffatape / pæn tape",1,"rulle",0]], tips:[],
+   warn:"Døren skal stadig kunne bruges som flugtvej – intet må dække håndtag, lås eller dørpumpe."}
+};
+
+/* ---------- Hjælpere til former ---------- */
+const R = (x1,y1,x2,y2) => ({t:"r",x1,y1,x2,y2});
+const C = (cx,cy,rx) => ({t:"e",cx,cy,rx,ry:rx/K,circle:true});
+const E = (cx,cy,rx,ry) => ({t:"e",cx,cy,rx,ry});
+const P = (...pts) => ({t:"p",pts});
+function bbox(s){
+  if(s.t==="r") return [s.x1,s.y1,s.x2,s.y2];
+  if(s.t==="e") return [s.cx-s.rx,s.cy-s.ry,s.cx+s.rx,s.cy+s.ry];
+  const xs=s.pts.filter((_,i)=>i%2===0), ys=s.pts.filter((_,i)=>i%2===1);
+  return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+}
+
+/* ---------- Trin-skabeloner ---------- */
+const snePattern = [
+ "stort og kraftigt med korte, brede grene – klip tre små V'er i hver kant",
+ "stjernearme med små sidegrene – klip to skrå snit pr. kant",
+ "kompakt og rundt – klip buer i stedet for spidser",
+ "mellemstort med lange, tynde arme – klip dybe snit tæt på hinanden",
+ "fint og blondeagtigt – mange små snit",
+ "lille og enkelt – kun to V'er pr. kant",
+ "lille stjerne – klip spidsen skråt af og ét V pr. side",
+ "lille med en ruder i midten – klip en lille trekant ud i midterfolden",
+ "klassisk – tre 'trapper' ned langs hver kant",
+ "kraftigt med brede arme – klip kun i den yderste halvdel",
+ "stort med hul i midten – klip spidsen helt af",
+ "mellemstort og spinkelt – smalle grene og lange spidser",
+ "lille og simpelt – ét snit pr. side"
+];
+const T = {
+ snefnug:(m,i)=>[
+  "Print foldeskabelonen til netop dette snefnug (knappen “Foldeskabelon” herunder) i 100 % størrelse, og klip den ud langs den sorte linje.",
+  `Klip et kvadrat af tyndt hvidt papir på ca. ${f1(m.dn+4)} × ${f1(m.dn+4)} cm (kopipapir – karton er for tykt at klippe i 12 lag).`,
+  "Fold kvadratet på midten til et rektangel. Midtpunktet på den lukkede foldekant bliver snefnuggets centrum.",
+  "Fold fra centrum papiret i tre lige store dele à 60° (som en Z-fold), så kanterne flugter.",
+  "Fold det hele én gang mere på midten – nu har du en spids på 30° med 12 lag.",
+  "Læg foldeskabelonen på: “● centrum” i papirets spids og de to stiplede linjer langs de to foldekanter. Tegn omridset af med blyant.",
+  "Klip langs blyantsstregen – klip aldrig langs foldekanterne. Små indhak klippes lettest med spidsen af saksen.",
+  "Fold forsigtigt ud, og pres snefnugget fladt under en tung bog. Læg det på billedet og sammenlign – det skal have samme arme og grene.",
+  "Lim det på med en lille klat lim i midten, så armene står lidt ud."
+ ],
+ bogstav:(m,ch,word,pos)=>[
+  `Tegn bogstavet “${ch}” på hvid karton: ca. ${m.w} cm bredt og ${m.h} cm højt. Tyk, afrundet blokskrift, der hælder en smule.`,
+  `Det er bogstav nr. ${pos} i ordet “${word}” – læg det ved siden af nabobogstaverne, så tykkelsen bliver ens.`,
+  /[abdegoqR]/.test(ch) ? "Klip omridset ud med saks, og skær hullet i bogstavet ud med hobbykniv på en skæreplade." : "Klip omridset ud med saks – hold linjerne helt lige.",
+  "Lim bogstavet på sort karton, og klip det sort ud med en kant på 6–8 mm – lidt bredere nedad og til højre. Det giver skyggeeffekten.",
+  "Lim det færdige bogstav på logo-bunden (det sorte felt)."
+ ],
+ lygte:(m)=>[
+  `Glasset: Klip skabelonens cirkel (Ø ${m.d} cm) ud af lilla karton, eller beklæd en papptallerken/CD med lilla folie.`,
+  `Ringen: Klip en cirkel på Ø ${f1(m.dn+1.6)} cm af sort karton – den stiplede cirkel på skabelonen.`,
+  "Klip en bølget form i lys lilla, og lim den på den nederste halvdel af glasset som refleks.",
+  "Lim glasset midt på den sorte ring.",
+  "Lim en lille hvid halvmåne øverst til venstre som glansspot."
+ ],
+ lys:(m,n)=>[
+  `Klip et rektangel af hvidt karton: ${m.w} cm bredt og ${m.h} cm højt (eller beklæd en toiletrulle med hvidt papir).`,
+  "Skyg den ene side med lysegrå farveblyant, så lyset ser rundt ud.",
+  "Er det en toiletrulle: skær den over på langs, så den kan ligge fladt mod døren.",
+  `Det er lys nr. ${n} fra venstre af 5 – det midterste lys er det højeste, de yderste er de laveste.`,
+  "Sæt lyset fast bag kransen, så den nederste kant er skjult af bladene."
+ ],
+ flamme:(m)=>[
+  `Klip en dråbeform i gul karton: ${m.w} cm bred og ${m.h} cm høj.`,
+  "Klip en mindre dråbe i orange, og lim den nederst i den gule.",
+  "Tegn en lille hvid streg i midten som glød (hvid tusch/gelpen).",
+  "Fold flammen let på langs, og lim kun den nederste spids fast på lyset – så står den ud fra døren."
+ ],
+ etage:(m,nr,side)=>[
+  `Denne etage er en del af ${side} juletræ. Træet laves i ÉT stykke med stammen – brug knappen “Vis / print skabelon” herover (samme skabelon for alle etager og stammen).`,
+  ...T.helTrae(side)
+ ],
+ stamme:(m)=>[
+  "Stammen er en del af juletræets helskabelon – træ og stamme klippes ud i ét stykke (se knappen herover).",
+  ...T.helTrae(null)
+ ],
+ helTrae:(side)=>{
+  const t=side?((window.SKAB||{}).dele||{})[side==="højre"?"granH":"granV"]:null;
+  return [
+  `Print helskabelonen${t?` (${fmtCm(t.w)} × ${fmtCm(t.h)} cm)`:""} i 100 % og tape arkene sammen, hvis den er delt.`,
+  "Læg skabelonen på mørkegrøn karton, tegn omridset af og klip HELE træet ud i ét stykke – med takkerne og stammen.",
+  "Stammen: mal den brun, eller lim en strimmel brun karton oven på stammedelen (klip den efter skabelonens stamme).",
+  "Tegn etagernes kanter (de takkede linjer) med en mørkere grøn tusch, så man kan se de tre etager.",
+  "Klip sne-hætterne ud af hvidt karton efter sne-skabelonen (den følger med i udskriften), og lim dem på træet.",
+  "Lim hele træet på døren – stammen må gerne forsvinde bag byen."
+  ];
+ },
+ bygning:(m,farve,vind)=>[
+  `Klip et rektangel af ${farve} karton: ${m.w} × ${m.h} cm.`,
+  vind ? `Bygningen har ${vind} – de er hver deres del her på siden (klik på dem).` : "Bygningen har ingen vinduer – hold den helt enkel.",
+  "Skyg den ene lodrette side en anelse mørkere med pastelkridt, så bygningen får dybde.",
+  "Lim bygningen på efter solen. Den nederste kant må gerne forsvinde bag bilen."
+ ],
+ vindue:(m)=>[
+  `Klip et lille rektangel af lys lilla/pink karton: ${m.w} × ${m.h} cm.`,
+  "Lav alle vinduer på én gang: klip en strimmel i vinduets bredde, og klip den i stykker – så bliver de ens.",
+  "Lim vinduet på bygningen, når bygningen er limet på underlaget."
+ ],
+ stribe:(m,nr)=>T.helSol(`Orange stribe nr. ${nr} af 3 er en udskæring i solens skabelon – den laves sammen med solen.`),
+ helSloejfe:(intro)=>{
+  const t=((window.SKAB||{}).dele||{}).sloejfe;
+  return [intro,
+  `Print skabelonen${t?` (${fmtCm(t.w)} × ${fmtCm(t.h)} cm)`:""} i 100 % og klip den ud.`,
+  "Læg den på rød karton, tegn omridset af, og klip hele båndet ud i ét stykke.",
+  "Tegn knuden (en lille cirkel midt på bæltet) og folderne med mørkerød farveblyant.",
+  "Klip et lille V i den nederste ende af det lange bånd.",
+  "Lim bæltet fladt over taljen; de hængende bånd limes kun foroven, så de bevæger sig lidt.",
+  "Ekstra 3D (valgfrit): fold to løkker af rødt crepepapir, og lim dem på knuden med en skumpude."];
+ },
+ helSol:(intro)=>{
+  const t=((window.SKAB||{}).dele||{}).sol;
+  return [intro,
+  `Print solens skabelon${t?` (${fmtCm(t.w)} × ${fmtCm(t.h)} cm)`:""} i 100 % – den er på A3.`,
+  "Læg skabelonen på gul karton, tegn omridset og de 3 striber af, og klip hele skiven ud.",
+  "Klip de 3 striber ud med hobbykniv og lineal (de grå felter på skabelonen). Den orange horisont bagved skinner igennem – præcis som på billedet.",
+  "Vil I have stærkere farve i striberne, så lim en strimmel rød-orange karton bag hver udskæring.",
+  "Gnid lidt orange kridt langs den nederste kant, og lim solen på horisonten."];
+ },
+ flade:(m,farve,ekstra)=>[
+  `Klip ${farve} på ca. ${m.w} × ${m.h} cm (sæt flere ark sammen bagfra med tape, hvis det er for stort).`,
+  ...ekstra
+ ]
+};
+
+/* ---------- Alle dele ---------- */
+let PARTS = [];
+function add(id,g,navn,shape,farver,trin,tid,extra={}){ PARTS.push(Object.assign({id,g,navn,shape,farver,trin,tid},extra)); }
+
+// Baggrund
+add("bg1","baggrund","Himmel øverst – lilla",R(14.5,0,91.5,22),["#6a2c9e"],m=>T.flade(m,"lilla karton/kraftpapir",[
+ "Riv den nederste kant i en blød bølge i stedet for at klippe lige.",
+ "Lim feltet øverst på underlaget, helt ud til kanterne.",
+ "Lad det pinke felt nedenunder overlappe 3–5 cm."]),40);
+add("bg2","baggrund","Himmel i midten – magenta/pink",R(14.5,20,91.5,42),["#e0469c","#f06ab0"],m=>T.flade(m,"magenta/pink karton",[
+ "Riv begge lange kanter, så overgangene bliver bløde.",
+ "Lim feltet ind under den lilla himmel, så de overlapper.",
+ "Dup lilla pastelkridt med en svamp hen over samlingen, så farverne glider over i hinanden (fra lilla over pink)."]),40);
+add("bg3","baggrund","Horisont – orange bånd",R(14.5,40,91.5,53),["#f7a046","#f26a2e"],m=>T.flade(m,"orange karton",[
+ "Riv den øverste kant, så den glider over i det pinke.",
+ "Lim båndet tværs over hele døren bag solen og byen.",
+ "Gnid lidt rød-orange kridt i den nederste del."]),25);
+add("bg4","baggrund","Mørk lilla bund (bag bil og by)",R(14.5,52,91.5,94),["#3b1f6e"],m=>T.flade(m,"mørk lilla papir",[
+ "Det ses kun rundt om bilen og nederst, så billigt kraftpapir er fint.",
+ "Lim det på underlaget før byen og bilen."]),20);
+// Sol + striber
+add("sol","sol","Solen",C(65.3,45.7,14),["#ffd23f","#f7a046"],m=>T.helSol("Solen er ét stykke – striberne er skåret ud af den."),30);
+[[52,42.8,79.3,43.7],[53.5,45.2,80,46.4],[55,48,80,49.5]].forEach((b,i)=>
+ add("stribe"+(i+1),"sol",`Orange solstribe ${i+1}`,R(...b),["#f26a2e"],m=>T.stribe(m,i+1),8));
+add("gulstribe","sol","Gul stribe nederst",R(60.9,49.5,80,50.9),["#ffd23f"],m=>T.helSol("Den gule stribe nederst er solens nederste stykke under 3. stribe – den er med i solens skabelon."),6);
+// Skyline – bygninger
+add("byV1","skyline","Bygning venstre 1 (yderst)",R(15,51,22,60),["#4b2a86"],m=>T.bygning(m,"mørk lilla",0),12);
+add("byV2","skyline","Bygning venstre 2 (høj, med vinduer)",R(22,48,28.5,62),["#7b3fc0"],m=>T.bygning(m,"violet","3 vinduer"),15);
+add("byV3","skyline","Bygning venstre 3 (lav)",R(28.5,51,33.5,62),["#4b2a86"],m=>T.bygning(m,"mørk lilla",0),10);
+add("byH1","skyline","Bygning højre 1 (lav, ved armen)",R(56.3,57,61.6,62),["#6a2c9e"],m=>T.bygning(m,"lilla",0),10);
+add("byH2","skyline","Bygning højre 2",R(61.6,54.1,68.3,62),["#4b2a86"],m=>T.bygning(m,"mørk lilla","1 vindue"),10);
+add("byH3","skyline","Bygning højre 3 (høj, med vinduer)",R(68.3,48.1,76.7,62),["#7b3fc0"],m=>T.bygning(m,"violet","2 vinduer"),15);
+add("byH4","skyline","Bygning højre 4 (smal)",R(76.6,51.7,80.8,62),["#6a2c9e"],m=>T.bygning(m,"lilla",0),8);
+add("byH5","skyline","Bygning højre 5 (mørk, yderst)",R(80.8,49.1,91.5,62),["#4b2a86"],m=>[...T.bygning(m,"mørk lilla",0),"Klip et hul til dørhåndtaget, hvis bygningen når derned."],12);
+// Vinduer
+[[23.9,49.3,25.1,50.7,"byV2"],[26.1,49.3,27.3,50.7,"byV2"],[26.1,52.2,27.3,53.7,"byV2"],[63.5,55.9,65.3,57.3,"byH2"],[72.4,52.3,74.2,53.9,"byH3"],[72.4,55.3,74.2,57.1,"byH3"]]
+ .forEach((w,i)=>add("vindue"+(i+1),"skyline",`Vindue ${i+1}`,R(w[0],w[1],w[2],w[3]),["#b48be6"],m=>T.vindue(m),3));
+// Juletræer
+add("stV","graner","Venstre juletræ – stamme",R(18.5,36,21.5,52),["#3b2a1e"],m=>T.stamme(m),8);
+add("grV3","graner","Venstre juletræ – nederste etage",P(22,26,32,36.8,14.8,36.8),["#1f4d3a","#ffffff"],m=>T.etage(m,3,"venstre"),20);
+add("grV2","graner","Venstre juletræ – midterste etage",P(22,21,30,29.8,15.5,29.8),["#1f4d3a","#ffffff"],m=>T.etage(m,2,"venstre"),18);
+add("grV1","graner","Venstre juletræ – øverste etage (top)",P(22,16.8,27.5,24.5,16.8,24.5),["#1f4d3a","#ffffff"],m=>T.etage(m,1,"venstre"),15);
+add("stH","graner","Højre juletræ – stamme",R(87.9,44,90.7,52.3),["#3b2a1e"],m=>T.stamme(m),8);
+add("grH3","graner","Højre juletræ – nederste etage",P(87,35,91.5,45,77.5,45),["#1f4d3a","#ffffff"],m=>T.etage(m,3,"højre"),18);
+add("grH2","graner","Højre juletræ – midterste etage",P(87.5,30,91.5,39.5,79.5,39.5),["#1f4d3a","#ffffff"],m=>T.etage(m,2,"højre"),15);
+add("grH1","graner","Højre juletræ – øverste etage (top)",P(87.5,27,91.5,33,82,33),["#1f4d3a","#ffffff"],m=>T.etage(m,1,"højre"),12);
+// Logo
+add("logobund","logo","Logo – sort bund/skygge",R(55,4,90.5,27),["#1a1a1a"],m=>[
+ `Klip et stykke sort karton på ca. ${m.w} × ${m.h} cm som arbejdsflade.`,
+ "Læg alle hvide bogstaver ud på det i den rigtige placering, før noget limes.",
+ "Klip den sorte karton til, så den følger bogstavernes yderkant med 6–8 mm kant.",
+ "Lim til sidst hele logoet som ét stykke på døren."],20);
+const words=[["grand",55.7,76.9,5,12],["theft",59.6,82.6,10.9,15.9],["auto",56.4,75.2,16.4,20.6]];
+words.forEach(([w,x1,x2,y1,y2])=>{
+  const bw=(x2-x1)/w.length;
+  [...w].forEach((ch,i)=>{
+    const disp=(w==="grand"&&ch==="r")?"R":ch;
+    add(`lg_${w}_${i}`,"logo",`Bogstav “${disp}” i “${w}”`,R(x1+bw*i,y1,x1+bw*(i+1),y2),["#ffffff","#1a1a1a"],m=>T.bogstav(m,disp,w,i+1),9);
+  });
+});
+add("lg_V","logo","Det store “V”",P(74.1,15.9,84.4,15.9,80.6,26.2,77.6,26.2),["#7b3fc0","#f06ab0","#f7a046"],m=>[
+ `Lim tre brede striber karton sammen bagfra: lilla øverst, pink i midten og orange nederst – til et ark på ca. ${m.w} × ${m.h} cm.`,
+ "Dup pastelkridt over samlingerne, så farverne glider i hinanden (gradient).",
+ "Tegn et stort, kantet V på bagsiden (spejlvendt!), og klip det ud.",
+ "Lim det på sort karton, og klip med 8 mm sort kant.",
+ "V'et står til højre for “auto” og går lige så højt op som “auto”s overkant – spidsen når længere ned end ordet."],20);
+add("lg_I","logo","Det store “I”",R(84.4,15.9,89,25.5),["#7b3fc0","#f06ab0","#f7a046"],m=>[
+ `Klip et rektangel på ${m.w} × ${m.h} cm af samme stribe-ark som V'et (lilla → pink → orange).`,
+ "Lim det på sort karton, og klip med 8 mm sort kant.",
+ "Placér det tæt op ad V'et, så de læses som “VI”."],12);
+// Bil
+add("hjelmV","bil","Kølerhjelm – venstre",P(15,62,25,61.5,35,63,52,66,52,72.3,15,72.3),["#6a2c9e"],m=>T.flade(m,"lilla karton",[
+ "Overkanten er let buet – tegn den efter billedet med gitteret.",
+ "Den højre del af hjelmen skjules af kjolen, så den behøver ikke være pæn.",
+ "Lim hjelmen på underlaget over lygterne."]),20);
+add("hjelmH","bil","Kølerhjelm – højre",P(70,64,80,65,91.5,70,91.5,74.5,70,74.5),["#6a2c9e"],m=>T.flade(m,"lilla karton",["Lad den gå ind under kjolens slæb.","Lim den på i samme højde som venstre side."]),15);
+add("stribeV","bil","Pink stribe – venstre",P(17,66,25,66.5,35,70,32,72.5,17,71),["#f06ab0"],m=>T.flade(m,"pink karton",["Klip den som en lang, skrå 'lyn'-form – det er lyset, der spejler sig i lakken.","Klip 2–3 smalle mørklilla striber og lim dem skråt hen over (fartstriber).","Lim den oven på hjelmen – hånden ligger ovenpå bagefter."]),12);
+add("stribeH","bil","Pink stribe – højre",P(72,68,82,69,91.5,72.5,91.5,74.5,85,73,72,69.8),["#f06ab0"],m=>T.flade(m,"pink karton",["Klip en lang, skrå stribe, der bliver bredere mod højre.","Lim den på hjelmen, så den spejler venstre side."]),10);
+add("gitter","bil","Kølergitter",R(35.5,73.8,49.7,80.6),["#1a1a1a","#3b1f6e"],m=>T.flade(m,"mørk lilla karton",["Lim 6–8 tynde sorte strimler (5 mm) lodret med 1 cm mellemrum, og 2 vandrette.","Den højre del skjules af kjolen – lav kun den synlige del pænt."]),15);
+[[22.6,77.5,4.1,"yderst til venstre"],[31.8,77.5,3.8,"inderst til venstre"],[80.3,78.2,3,"inderst til højre"],[87,78.2,3,"yderst til højre"]]
+ .forEach((l,i)=>add("lygte"+(i+1),"bil",`Forlygte ${i+1} (${l[3]})`,C(l[0],l[1],l[2]),["#1a1a1a","#9a5fd6","#c89bf0"],m=>T.lygte(m),15));
+add("listV","bil","Pink kofangerlinje – venstre",R(17.8,80.9,48.2,82),["#f06ab0"],m=>T.flade(m,"en smal strimmel pink karton",["Lim en tynd hvid streg ovenpå som glans.","Lim den lige under lygterne."]),6);
+add("listH","bil","Pink kofangerlinje – højre",R(77.3,80.9,91.5,82),["#f06ab0"],m=>T.flade(m,"en smal strimmel pink karton",["Lim en tynd hvid streg ovenpå som glans.","Lim den lige under lygterne."]),5);
+add("blinkV","bil","Blinklys – venstre",R(21,83.3,29.1,85.4),["#e8590c"],m=>T.flade(m,"orange karton med runde hjørner",["Lim det på sort karton, og klip med 3 mm sort kant.","Tegn en lys streg øverst med gul farveblyant."]),6);
+add("blinkH","bil","Blinklys – højre",P(82.6,84.1,89,84.1,88.6,86.2,82.2,86.2),["#e8590c"],m=>T.flade(m,"orange karton – en let skæv firkant",["Lim det på sort karton, og klip med 3 mm sort kant.","Tegn en lys streg øverst med gul farveblyant."]),6);
+add("indtag","bil","Luftindtag",R(35.9,84.3,46.1,86.5),["#111111"],m=>T.flade(m,"sort karton",["Lim det vandret i kofangeren til venstre for kjolen."]),4);
+add("frontV","bil","Kofanger/front forneden – venstre",R(15,82,52,94),["#3b1f6e"],m=>T.flade(m,"mørk violet karton",["Lim den under lygterne – blinklys, luftindtag og snefnug sættes ovenpå."]),12);
+add("frontH","bil","Kofanger/front forneden – højre",R(76,82,91.5,94.5),["#3b1f6e"],m=>T.flade(m,"mørk violet karton",["Den går ind under kjolens slæb."]),10);
+// Sne
+add("sne","sne","Snedrive forneden",P(15,94,25,93,35,94.5,45,97,55,96,65,97.5,75,97.5,85,95.5,91.5,94.5,91.5,99.5,15,99.5),["#f6f3f7"],m=>T.flade(m,"2–3 lag hvidt silkepapir / kraftigt hvidt papir",[
+ "Riv en bølget overkant – ikke klip.","Krøl papiret, og glat det ud igen, så det ligner sne.","Lim lagene forskudt – det bagerste lag højest.","Drys glimmer på, mens limen er våd."]),30);
+// Kjole
+const krol="Krøl papiret hårdt sammen, og glat det ud igen – så får det stofstruktur.";
+add("overdel","kjole","Kjole – overdel",P(40,42,47,42.5,53,42,54,55,41.5,55,39,46),["#f6f3f7","#cfc8d8"],m=>T.flade(m,"hvidt papir",[krol,"Klip en rund halsudskæring øverst.","Skyg lidt grå under brystet og langs siderne.","Lim overdelen på oven på byen."]),25);
+add("aermeV","kjole","Venstre ærme (langt klokkeærme)",P(37,41.5,41,44,41,58,39,65,37.5,69.5,30.5,69,33,58,34,48),["#f6f3f7","#cfc8d8"],m=>T.flade(m,"hvidt papir",[krol,"Ærmet bliver bredere nedad – som en klokke.","Lim 2 lange grå trekanter på som folder.","Hånden limes på i ærmets åbning senere."]),20);
+add("aermeH","kjole","Højre ærme (armen holder pistolen)",P(56,46.5,62.6,46.2,60,51,57,55.7,53.4,54.5,54,47),["#f6f3f7","#cfc8d8"],m=>T.flade(m,"hvidt papir",[krol,"Ærmet er bøjet i albuen og går opad mod hånden.","Skyg folderne i albuen med grå kridt."]),15);
+add("skoed","kjole","Kjole – skødet (siddende ben)",P(37,57,55,56,66,61,62,63.5,56,62.5,52,66,42,69,37,66,34,62),["#f6f3f7","#cfc8d8"],m=>T.flade(m,"hvidt papir",[krol,"Skødet ligger hen over kølerhjelmen – overkanten følger bæltet.","Skyg en tydelig fold, hvor knæet bøjer."]),25);
+add("slaeb","kjole","Kjole – lang nederdel og slæb",P(56,62,66,61.5,70,68,75,77,80,85,87,95,88,98.5,74,98.5,62,96,57,92,52,88,46,86.5,50,80,52,73,55,66),["#f6f3f7","#cfc8d8"],m=>T.flade(m,"hvidt papir på rulle",[krol,
+ "Klip 5–6 lange, smalle trekanter af lysegrå karton, og lim dem på i vifteform fra knæet og ned – det er folderne.",
+ "Gnid grå pastelkridt langs hver fold og langs kanten.",
+ "Lad slæbet gå helt ned over bilen og sneen."]),60);
+// Hud
+add("haar","hud","Hår (langt og krøllet, venstre side)",P(36,30.5,41.5,30.5,41,40,38,46,35,51,31,50,32,42,34,36),["#4a2416","#7a3a1c"],m=>[
+ `Hårets område er ca. ${m.w} × ${m.h} cm.`,
+ "Klip 25–30 lange, bølgede strimler (1–2 cm brede) i mørkebrun og rødbrun.",
+ "Krøl strimlerne ved at trække dem hårdt over et saksblad.",
+ "Lim dem i lag: de mørke bagerst, de lyse forrest. Lim kun i toppen.",
+ "Lad håret falde over skulderen og ned ad ryggen på kjolen."],30);
+add("ansigt","hud","Ansigt",E(46.2,35.2,4.6,4.2),["#a8673d","#1a1a1a"],m=>[
+ `Tegn ansigtet på hudfarvet karton: ca. ${m.w} × ${m.h} cm. Øv først på kladdepapir.`,
+ "Tegn med blyant: kraftige, lige øjenbryn, mandelformede øjne, lige næse og fyldige, mørke læber. Hun ser alvorligt/sejt ud.",
+ "Farvelæg: brune skygger under kindbenene og langs næsen, mørkebrune læber.",
+ "Optegn til sidst med sort fineliner.",
+ "Klip ansigtet ud, og lim det på oven på hals og hår."],45);
+add("oereV","hud","Ørering – venstre side af billedet",C(39.8,37,1.1),["#d4a017"],m=>[`Klip en ring af guldpapir: ca. ${m.d} cm i diameter og 3 mm bred.`,"Lim den, så den hænger fra øreflippen ud over håret."],5);
+add("oereH","hud","Ørering – højre side af billedet",C(50.3,37.6,1.3),["#d4a017"],m=>[`Klip en ring af guldpapir: ca. ${m.d} cm i diameter og 3 mm bred.`,"Lim den ved kæbelinjen, så den hænger ned langs halsen."],5);
+add("hals","hud","Hals",R(41.5,39.5,48.2,42.5),["#a8673d"],m=>T.flade(m,"hudfarvet karton",["Skyg en mørkere stribe under hagen.","Lim halsen på før ansigtet, så den nederste kant går ind under kjolens halsudskæring."]),8);
+add("haandH","hud","Højre hånd (holder pistolen)",E(60.3,41.7,3,2),["#a8673d"],m=>[`Tegn en knyttet hånd på hudfarvet karton: ca. ${m.w} × ${m.h} cm, med pegefingeren langs pistolen.`,"Tegn fingrene op med brun farveblyant.","Lim hånden OVEN PÅ pistolen, så det ser ud, som om hun holder den."],15);
+add("haandV","hud","Venstre hånd (hviler på bilen)",E(25.5,69.2,4.8,1.4),["#a8673d"],m=>[`Tegn en flad, afslappet hånd set fra siden: ca. ${m.w} × ${m.h} cm.`,"Tegn fingrene med brun farveblyant.","Lim den ved enden af venstre ærme, så den hviler på kølerhjelmen."],15);
+// Sløjfe
+add("baand","sloejfe","Hængende bånd",P(44.5,57,49,57,52,63,49,74.3,47.5,74,46,65,43,60),["#d0151c"],m=>T.helSloejfe("De hængende bånd er en del af det røde bånds skabelon – de klippes ud sammen med bælte og knude."),10);
+add("baelte","sloejfe","Bælte",R(41.9,54.4,53.9,56.5),["#d0151c"],m=>T.helSloejfe("Bæltet er en del af det røde bånds skabelon – det klippes ud sammen med knude og bånd."),8);
+add("knude","sloejfe","Sløjfe-løkker og knude",E(48,57,4,2.2),["#d0151c"],m=>T.helSloejfe("Knuden er en del af det røde bånds skabelon – den klippes ud sammen med bælte og bånd."),15);
+// Krans
+add("krans","krans","Grøn krans",E(44.8,29,10.5,2.8),["#1f6b3a","#d0151c"],m=>[
+ `Klip en bue af mørkegrøn karton: ca. ${m.w} cm bred – den skal passe hen over hovedet.`,
+ "Klip 25–30 små, spidse blade, og fold hvert blad på midten (3D).",
+ "Lim bladene tæt og lidt skævt på buen.",
+ "Lav bær med hullemaskine i rødt papir – lim 10–15 bær mellem bladene.",
+ "Lim kransen på oven på håret, når lysene er sat bag ved."],25);
+[[36.9,24.1,39,27.8],[40.6,22.5,42.9,27],[44.3,21.2,46.7,26.5],[48.2,23.1,50.5,27],[51.8,24.4,53.9,28.1]]
+ .forEach((b,i)=>add("lys"+(i+1),"krans",`Lys ${i+1}`,R(...b),["#f6f3f7"],m=>T.lys(m,i+1),8));
+[[37.9,22.7,1.2,1.45],[41.7,21,1.3,1.55],[45.5,19.6,1.3,1.6],[49.3,21.6,1.25,1.45],[52.8,23,1.15,1.45]]
+ .forEach((f,i)=>add("flamme"+(i+1),"krans",`Flamme ${i+1}`,E(...f),["#ffd23f","#f7a046"],m=>T.flamme(m),5));
+// Pistol
+add("pistol","pistol","Pistolen",P(60,33.6,63.3,34,62.5,40,63.5,43.8,60,44,56.5,40,55.3,38,58.5,36.5),["#1a1a1a"],m=>[
+ `Tegn pistolens silhuet på sort karton, piben peger skråt opad: ca. ${m.w} × ${m.h} cm.`,
+ "Klip den ud, og tegn kanter og detaljer med sølvtusch.",
+ "Sæt den på med skumpuder, så den står ud fra døren, og lim hånden ovenpå."],20);
+// Snefnug
+[[24.5,6.9,4.6],[44.4,5.8,3.9],[85.7,4.4,3.6],[35.1,14.2,3.5],[67.9,26.8,3.4],[77.1,32.1,2.7],[26.3,44.3,2.8],[27,56.5,2.8],[85.7,54.8,2.8],[76.6,61.2,3.2],[29,90,3.3],[42,93.8,3.3],[88.4,91.7,2.4]]
+ .forEach((s,i)=>add("sf"+(i+1),"snefnug",`Snefnug ${i+1}`,C(s[0],s[1],s[2]),["#ffffff"],m=>T.snefnug(m,i),8));
+// Håndtag
+add("haandtag","haandtag","Dørhåndtag & lås – hold fri!",R(80,57.5,91.5,68.5),["#9a9a9a"],m=>[
+ `Klip et hul på ca. ${m.w} × ${m.h} cm i underlaget, før der limes noget på.`,
+ "Forstærk kanten rundt om hullet med tape, så papiret ikke flænses.",
+ "Tjek efter ophængningen, at døren kan åbne, lukke og låse normalt."],10);
+
+const DOOR_CM = {w:80, h:200};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f1=v=>v<10?v.toFixed(1).replace(".",","):Math.round(v).toString();
+// Samme skala vandret og lodret (som skabelonerne): motivet fylder dørens 80 cm i bredden
+const CM_PR_PX = (window.SKAB && window.SKAB.cm_pr_px) || DOOR_CM.w/((DOOR.x2-DOOR.x1)/100*353);
+const cmX=v=>v/100*353*CM_PR_PX, cmY=v=>v/100*472*CM_PR_PX;
+const MOTIV_H = Math.round((DOOR.y2-DOOR.y1)/100*472*CM_PR_PX);
+const areaFactor=(DOOR_CM.w*DOOR_CM.h)/(88*205);
+function measure(p){
+  const T0=((window.SKAB||{}).dele||{})[p.id];          // findes der en skabelon, er dens mål de præcise
+  const b=bbox(p.shape), w=T0?T0.w:cmX(b[2]-b[0]), h=T0?T0.h:cmY(b[3]-b[1]);
+  const m={w:f1(w),h:f1(h),wn:w,hn:h};
+  if(p.shape.circle){const d=Math.sqrt(w*h); m.d=f1(d); m.dn=d;} else {m.d=f1(Math.max(w,h)); m.dn=Math.max(w,h);}
+  return m;
+}
+const sizeLabel=(p,m)=>p.shape.circle?`Ø ${m.d} cm`:`${m.w} × ${m.h} cm`;
+
+/* Klikbare former */
+const svg=$("#hot"), NS="http://www.w3.org/2000/svg";
+[...PARTS].sort((a,b)=>{
+  const la=G[a.g].lag, lb=G[b.g].lag; if(la!==lb) return la-lb;
+  const A=bbox(a.shape), B=bbox(b.shape); return (B[2]-B[0])*(B[3]-B[1])-(A[2]-A[0])*(A[3]-A[1]);
+}).forEach(p=>{
+  const s=p.shape; let el;
+  if(s.t==="r"){el=document.createElementNS(NS,"rect");el.setAttribute("x",s.x1);el.setAttribute("y",s.y1);el.setAttribute("width",s.x2-s.x1);el.setAttribute("height",s.y2-s.y1);el.setAttribute("rx",.4);}
+  else if(s.t==="e"){el=document.createElementNS(NS,"ellipse");el.setAttribute("cx",s.cx);el.setAttribute("cy",s.cy);el.setAttribute("rx",s.rx);el.setAttribute("ry",s.ry);}
+  else {el=document.createElementNS(NS,"polygon");el.setAttribute("points",s.pts.join(" "));}
+  el.classList.add("hs"); el.dataset.id=p.id;
+  el.addEventListener("click",()=>select(p.id));
+  el.addEventListener("mousemove",e=>{const t=$("#tooltip");t.textContent=p.navn;t.style.left=(e.clientX+14)+"px";t.style.top=(e.clientY+14)+"px";t.style.opacity=1;});
+  el.addEventListener("mouseleave",()=>$("#tooltip").style.opacity=0);
+  svg.appendChild(el);
+});
+
+/* Skabeloner (tegnet direkte efter fotoet, 1:1) – hver del har sin egen */
+function tplIds(p){
+  const D=(window.SKAB||{}).dele||{};
+  // juletræerne laves som ét helt træ med stamme – alle etager og stammen peger på samme skabelon
+  const tree=/^(gr|st)V/.test(p.id)?"V":/^(gr|st)H/.test(p.id)?"H":null;
+  if(tree) return ["gran"+tree,"sne"+tree].filter(id=>D[id]);
+  if(p.g==="sol") return D.sol?["sol"]:[];                 // hele solen med striber i én skabelon
+  if(p.g==="sloejfe") return D.sloejfe?["sloejfe"]:[];     // hele sløjfen i én skabelon
+  return D[p.id]?[p.id]:[];
+}
+/* Papirformat – samme regler som skabeloner.html */
+function paperInfo(t){
+  const LBL=1.1, A4={W:19,H:25.4}, A3={W:27.7,H:37.7}, OVER=1;
+  const fit=(F,w,h)=>w<=F.W && h+LBL<=F.H;
+  if(fit(A4,t.w,t.h)||fit(A4,t.h,t.w)) return {f:"A4", n:1};
+  if(fit(A3,t.w,t.h)||fit(A3,t.h,t.w)) return {f:"A3", n:1};
+  const vh=A3.H-0.4, n=(w,h)=>Math.ceil((w-OVER)/(A3.W-OVER))*Math.ceil((h-OVER)/(vh-OVER));
+  return {f:"A3", n:Math.min(n(t.w,t.h),n(t.h,t.w))};
+}
+function previewSVG(t){
+  const pad=Math.max(t.w,t.h)*0.06, w=t.w+2*pad, h=t.h+2*pad;
+  const d=t.polys.map(q=>"M"+q.map(([x,y])=>`${(x+pad).toFixed(2)} ${(y+pad).toFixed(2)}`).join("L")+"Z").join("");
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet"><path d="${d}" fill="#111" fill-rule="evenodd"/></svg>`;
+}
+function tplHTML(p){
+  const ids=tplIds(p); if(!ids.length) return "";
+  const t=window.SKAB.dele[ids[0]], fold=!!t.wedge, pi=paperInfo(t);
+  const fmtTxt = pi.f==="A4" ? `<span class="ptag">A4</span>`
+    : `<span class="ptag a3">A3${pi.n>1?` · ${pi.n} ark`:""}</span>`;
+  const a3note = pi.f==="A3" ? `<div class="note warn" style="margin:8px 0 0;font-size:.82rem"><b>Obs: A3!</b> Denne skabelon er for stor til A4 og skal udskrives på <b>A3-papir</b>${pi.n>1?` – den er delt på ${pi.n} A3-ark, som tapes sammen ved den grå kant`:""}.</div>` : "";
+  const rect = /^bg\d$/.test(p.id) ? `<div class="muted" style="font-size:.82rem;margin-top:4px">Et rent rektangel – nemmest at måle op direkte med lineal. 1:1-skabelonen findes alligevel.</div>` : "";
+  const one = p.g==="sol" ? `<div class="muted" style="font-size:.82rem;margin-top:4px">Én skabelon for <b>hele solen</b> – de 3 striber er udskæringer i skiven.</div>`
+    : p.g==="sloejfe" ? `<div class="muted" style="font-size:.82rem;margin-top:4px">Én skabelon for <b>hele det røde bånd</b> – bælte, knude og begge bånd i ét stykke.</div>` : "";
+  const extra = rect + one + (ids[0].startsWith("gran") ? `<div class="muted" style="font-size:.82rem;margin-top:4px">Én skabelon for <b>hele træet med stamme</b> (alle etager i ét omrids). Udskriften indeholder også træets sne-hætter.</div>` : "");
+  const href = fold ? `skabeloner.html?del=${p.id}&type=hel` : `skabeloner.html?del=${ids.join(",")}`;
+  return `<div class="tpl">${previewSVG(t)}<div class="txt"><b>Skabelon i 1:1 – tegnet direkte efter billedet</b>
+    ${fmtCm(t.w)} × ${fmtCm(t.h)} cm ${fmtTxt}${fold?" · med foldeskabelon (1/12)":""}${extra}
+    <div class="btns">
+      ${fold?`<a class="btn" target="_blank" href="skabeloner.html?del=${p.id}&type=fold">Foldeskabelon</a>`:""}
+      <a class="btn${fold?" sec":""}" target="_blank" href="${href}">${fold?"Hel skabelon":"Vis / print skabelon"}</a>
+      <a class="btn sec" target="_blank" href="${href}&pdf=1">Download PDF</a>
+    </div>${a3note}</div></div>`;
+}
+const fmtCm=v=>(Math.round(v*10)/10).toString().replace(".",",");
+
+/* Vejledning for én del */
+function select(id){
+  const p=PARTS.find(x=>x.id===id), g=G[p.g], m=measure(p), idx=PARTS.indexOf(p);
+  document.querySelectorAll(".hs").forEach(h=>h.classList.toggle("sel",h.dataset.id===id));
+  $("#panel").innerHTML=`
+    <div class="kicker">${esc(g.navn)} · lag ${g.lag} ved samling</div>
+    <h2 class="ptitle">${esc(p.navn)}</h2>
+    <div class="facts">
+      <div class="fact"><div class="l">Mål</div><div class="v">${sizeLabel(p,m)}</div></div>
+      <div class="fact"><div class="l">Farver</div><div class="v">${p.farver.map(c=>`<span class="dot" style="background:${c}" title="${c}"></span>`).join("")}</div></div>
+    </div>
+    ${tplHTML(p)}
+    ${g.warn?`<div class="note warn">${esc(g.warn)}</div>`:""}
+    <h3>Sådan gør du</h3>
+    <ol class="steps">${p.trin(m).map(t=>`<li><span>${esc(t)}</span></li>`).join("")}</ol>
+    ${g.tips.map(t=>`<div class="note">${esc(t)}</div>`).join("")}
+    <h3>Materialer til hele gruppen “${esc(g.navn)}”</h3>
+    <ul class="mats">${g.mat.map(x=>`<li>${esc(x[0])}: <b>${x[3]?Math.ceil(x[1]*areaFactor*10)/10:x[1]} ${x[2]}</b></li>`).join("")}</ul>
+    <div class="navrow">
+      <button class="btn sec" data-sel="${PARTS[(idx-1+PARTS.length)%PARTS.length].id}">← Forrige del</button>
+      <button class="btn" data-sel="${PARTS[(idx+1)%PARTS.length].id}">Næste del →</button>
+    </div>`;
+  if(window.innerWidth<900) $("#panel").scrollIntoView({behavior:"smooth"});
+}
+
+/* Den store samlevejledning: lag for lag med placering i cm */
+const SAML = {
+ baggrund:{tid:15, trin:[
+  "Hele underlaget er lilla (også de ekstra 62 cm himmel øverst). Læg de pink, orange og mørk lilla flader på efter tabellen.",
+  "Lim hele fladen med limstift (ikke hobbylim – det bobler), og glat ud fra midten mod kanterne med en lineal.",
+  "Dup pastelkridt hen over samlingerne, så overgangene bliver bløde."]},
+ sol:{tid:10, trin:[
+  "Solen er ét stykke med udskårne striber. Placér den efter solens mål i tabellen (striberne følger automatisk med).",
+  "Tjek med linealen, at striberne ligger helt vandret, før I limer."]},
+ skyline:{tid:15, trin:[
+  "Bygningerne står på begge sider af figuren. Lim de lyse (bagerste) bygninger før de mørke.",
+  "Bygningernes underkant skal flugte – læg en lang lineal som 'jord' og skub bygningerne ned til den.",
+  "Vinduerne limes på bygningerne til sidst."]},
+ graner:{tid:10, trin:[
+  "Hvert træ er ét helt stykke med stamme (klippet efter helskabelonen). Placér det efter tabellen – brug øverste etage som målepunkt.",
+  "Lim træet fast med limstift over hele fladen; sne-hætterne limes ovenpå til sidst."]},
+ logo:{tid:15, trin:[
+  "Lim den sorte logobund først, og tjek med linealen, at den sidder helt lige – logoet ses først af alle.",
+  "Læg alle bogstaver på uden lim (tør-prøve), og ret afstandene, før I limer dem et ad gangen.",
+  "V og I limes til sidst, gerne med skumpuder, så de står lidt frem."]},
+ bil:{tid:15, trin:[
+  "Lim karosseriet først, derefter hjul, ruder og lister.",
+  "Lygterne og blinklysene til sidst – gerne med skumpuder, så de stikker frem og fanger lyset."]},
+ sne:{tid:10, trin:[
+  "Krøl silkepapiret let og lim det langs bunden – det må gerne dække bunden af bygninger, træer og bil.",
+  "Drys glimmer på mens limen er våd."]},
+ kjole:{tid:10, trin:[
+  "Kjolen er figurens største flade – læg den på uden lim og tjek midtpunktet, før I limer.",
+  "Lim kun langs kanterne og i midten, så folderne i papiret bevares."]},
+ hud:{tid:10, trin:[
+  "Hals og hænder først, så ansigtet, til sidst håret ovenpå ansigtets kant.",
+  "Øreringene limes på allersidst med en lille klat hobbylim."]},
+ sloejfe:{tid:5, trin:[
+  "Det røde bånd er ét stykke. Lim bæltet fladt over taljen og de hængende bånd kun foroven. 3D-løkkerne kan vente, til døren hænger."]},
+ krans:{tid:10, trin:[
+  "Kransen først, så lysene ovenpå, så flammerne.",
+  "Flammerne er sarte – sæt dem evt. først på, når døren hænger."]},
+ pistol:{tid:5, trin:["Lim pistolen på hånden med skumpuder. Husk: tjek med læreren først, om den må være med."]},
+ snefnug:{tid:10, trin:[
+  "Snefnuggene ligger øverst – lim dem kun i midten, så armene løfter sig lidt.",
+  "Brug de ekstra snefnug i den øverste, tomme himmel – spred dem tilfældigt, men ikke for tæt."]},
+ haandtag:{tid:5, trin:["Klip håndtagshullet til efter jeres rigtige dør, og tape kanten pænt med gaffatape."]}
+};
+function placering(p){
+  const b=bbox(p.shape), cx=(b[0]+b[2])/2, cy=(b[1]+b[3])/2;
+  return {x:cmX(cx-DOOR.x1), y:(200-MOTIV_H)+cmY(cy-DOOR.y1)};
+}
+let totTid=0;
+$("#finalLayers").innerHTML=Object.entries(G).sort((a,b)=>a[1].lag-b[1].lag).map(([gid,g])=>{
+  const ps=PARTS.filter(p=>p.g===gid).map(p=>({p,pos:placering(p),m:measure(p)}))
+    .sort((a,b)=>a.pos.y-b.pos.y||a.pos.x-b.pos.x);
+  const s=SAML[gid]||{tid:5,trin:[]}; totTid+=s.tid;
+  return `<div class="lagbox"><h4><span class="n">${g.lag}</span>${esc(g.navn)}
+      <span class="muted" style="font-weight:400;font-size:.85rem">· ${ps.length} ${ps.length===1?"del":"dele"} · ca. ${s.tid} min</span></h4>
+    <ul>${s.trin.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+    <table class="ptab"><thead><tr><th></th><th>Del</th><th style="text-align:right">Mål</th><th style="text-align:right">Fra venstre</th><th style="text-align:right">Fra toppen</th></tr></thead><tbody>
+    ${ps.map(({p,pos,m})=>`<tr><td class="ok"></td><td><a data-sel="${p.id}">${esc(p.navn.replace(g.navn+" – ",""))}</a></td>
+      <td class="num">${sizeLabel(p,m)}</td><td class="num">${fmtCm(pos.x)} cm</td><td class="num">${fmtCm(pos.y)} cm</td></tr>`).join("")}
+    </tbody></table></div>`;
+}).join("") + `<div class="note">Mål = delens midtpunkt. Underlaget er 80 cm bredt og 200 cm højt. Samlet tid for alle lag: ca. <b id="totTid"></b> min.</div>`;
+$("#totTid").textContent=totTid;
+$("#printFinal").addEventListener("click",()=>{document.body.classList.add("printfinal");window.print();document.body.classList.remove("printfinal");});
+
+$("#grpLinks").innerHTML=Object.entries(G).sort((a,b)=>a[1].lag-b[1].lag).map(([gid,g])=>
+  `<a class="btn sec" target="_blank" href="skabeloner.html?gruppe=${gid}${gid==="snefnug"?"&type=fold":""}" style="margin:0 4px 6px 0">${esc(g.navn)}${gid==="snefnug"?" (fold)":""}</a>`).join("");
+document.querySelectorAll(".motivh").forEach(e=>e.textContent=MOTIV_H);
+document.querySelectorAll(".restH").forEach(e=>e.textContent=200-MOTIV_H);
+document.querySelectorAll(".feltH").forEach(e=>e.textContent=fmtCm(MOTIV_H/10));
+
+document.addEventListener("click",e=>{const s=e.target.closest("[data-sel]"); if(s){select(s.dataset.sel); if(!e.target.closest("#panel")) window.scrollTo({top:0,behavior:"smooth"});}});
+</script>
+</body>
+</html>

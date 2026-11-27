@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<title>Skabeloner 1:1 – Juledøren</title>
+<style>
+@page{size:A4 portrait;margin:10mm}
+@page a3{size:A3 portrait;margin:10mm}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;color:#111;background:#ececea}
+.bar{position:sticky;top:0;z-index:5;background:#111;color:#fff;padding:12px 20px;display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.bar b{font-size:1rem}
+.bar .hint{font-size:.82rem;opacity:.85;flex:1;min-width:260px}
+.bar button{background:#fff;color:#111;border:none;border-radius:999px;padding:8px 16px;font:inherit;font-size:.84rem;cursor:pointer}
+.bar button.sec{background:transparent;color:#fff;border:1px solid #666}
+.bar button:disabled{opacity:.4;cursor:default}
+.sum{width:100%;font-size:.82rem;display:flex;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;background:#fff;color:#111}
+.tag.a3{background:#ffd23f}
+.pages{padding:20px 0 60px}
+.page{margin:0 auto 14px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.12);position:relative;page-break-after:always;break-after:page}
+.page.a4{width:190mm;height:277mm}
+.page.a3{width:277mm;height:400mm;page:a3}
+.page svg{display:block;width:100%;height:100%}
+@media print{
+  body{background:#fff}
+  .bar{display:none}
+  .pages{padding:0}
+  .page{margin:0;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b id="title">Skabeloner</b>
+  <span class="hint">Udskriv i <b>100 % / faktisk størrelse</b> – ikke “tilpas til side”. Kontrolstregen nederst på hver side skal måle præcis 5 cm. <b>A3-sider er markeret med gult</b> og skal udskrives på A3-papir.</span>
+  <button id="pdfAll">Download PDF</button>
+  <button class="sec" id="pdfA4">PDF kun A4</button>
+  <button class="sec" id="pdfA3">PDF kun A3</button>
+  <button class="sec" onclick="print()">Udskriv</button>
+  <div class="sum" id="sum"></div>
+</div>
+<div class="pages" id="pages"></div>
+
+<script src="skabeloner/skabeloner.js"></script>
+<script>
+/* ===============================================================
+   Hvad skal udskrives?
+   =============================================================== */
+const S = window.SKAB, D = S.dele, META = S.meta || {};
+const EXTRA_NAVN = {sneV:"Venstre juletræ – sne-hætter", sneH:"Højre juletræ – sne-hætter",
+  granV:"Venstre juletræ – hele træet med stamme", granH:"Højre juletræ – hele træet med stamme",
+  sloejfe:"Rødt bånd – bælte, knude og bånd i ét", sol:"Solen – hele skiven med udskårne striber"};
+const EXTRA_G = {sneV:"graner", sneH:"graner", granV:"graner", granH:"graner", sloejfe:"sloejfe"};
+const navn = id => EXTRA_NAVN[id] || (META[id] && META[id].navn) || id;
+const gruppe = id => (META[id] && META[id].g) || EXTRA_G[id] || "";
+const lag = id => (META[id] && META[id].lag) || 4.5;
+const ALIAS = {juletraeer:["graner"], figur:["pistol","sloejfe"]};
+
+const q = new URLSearchParams(location.search);
+let ids = Object.keys(D).sort((a,b)=>lag(a)-lag(b));
+let titel = "Alle skabeloner", slug = "alle";
+if(q.get("del")){
+  ids = q.get("del").split(",").filter(id=>D[id]);
+  titel = ids.length===1 ? navn(ids[0]) : "Udvalgte skabeloner"; slug = ids.join("-");
+} else if(q.get("gruppe")){
+  const gs = ALIAS[q.get("gruppe")] || q.get("gruppe").split(",");
+  ids = ids.filter(id=>gs.includes(gruppe(id)));
+  titel = "Skabeloner – "+q.get("gruppe"); slug = q.get("gruppe");
+}
+// Baggrundsbåndene er rene rektangler på 80 cm bredde – de måles op direkte og kommer kun med, når de vælges særskilt
+const RECT = ["bg1","bg2","bg3","bg4"];
+let rectNote = false;
+if(!q.get("del") && q.get("gruppe")!=="baggrund" && ids.some(id=>RECT.includes(id))){ ids = ids.filter(id=>!RECT.includes(id)); rectNote = true; }
+const mode = q.get("type") || "alt";      // "alt" | "fold" | "hel"
+if(mode!=="alt") slug += "-"+mode;
+document.getElementById("title").textContent = titel;
+document.title = titel + " – skabeloner 1:1";
+
+/* ===============================================================
+   Formater (alt i cm). Udskriftsområde = papir minus 1 cm margen.
+   =============================================================== */
+const FMT = {
+  A4:{name:"A4", W:19.0, H:27.7, pw:21.0, ph:29.7},
+  A3:{name:"A3", W:27.7, H:40.0, pw:29.7, ph:42.0}
+};
+const TOP=1.3, BOT=1.0, GAP=0.8, LBL=1.1, OVER=1.0;
+const areaH = F => F.H - TOP - BOT;
+const fits = (F,w,h) => w<=F.W && h+LBL<=areaH(F);
+const fmt = v => (Math.round(v*10)/10).toString().replace(".",",");
+function rotPolys(polys,h){ return polys.map(p=>p.map(([x,y])=>[h-y,x])); }
+
+/* Alle elementer der skal på papir */
+const items = [];
+ids.forEach(id=>{
+  const t=D[id]; if(!t) return;
+  if(mode!=="fold"){
+    let F, rot=false, tile=false;
+    if(fits(FMT.A4,t.w,t.h)) F=FMT.A4;
+    else if(fits(FMT.A4,t.h,t.w)){F=FMT.A4; rot=true;}
+    else if(fits(FMT.A3,t.w,t.h)) F=FMT.A3;
+    else if(fits(FMT.A3,t.h,t.w)){F=FMT.A3; rot=true;}
+    if(!F){                                   // for stor til ét A3: deles på A3-ark, retning med færrest ark
+      F=FMT.A3; tile=true;
+      const vh=areaH(F)-0.4;
+      const n=(w,h)=>Math.ceil((w-OVER)/(F.W-OVER))*Math.ceil((h-OVER)/(vh-OVER));
+      rot = n(t.h,t.w) < n(t.w,t.h);
+    }
+    const w=rot?t.h:t.w, h=rot?t.w:t.h;
+    let circle=null;
+    if(t.circle) circle = rot ? {cx:t.h-t.circle.cy, cy:t.circle.cx, r:t.circle.r} : t.circle;
+    items.push({id, kind:"hel", F, tile, rot, w, h, polys: rot?rotPolys(t.polys,t.h):t.polys, circle, t});
+  }
+  if(t.wedge && mode!=="hel"){
+    const R=t.wedge_R;
+    items.push({id, kind:"fold", F:FMT.A4, tile:false, w:Math.max(R*Math.sin(Math.PI/6)+0.6,4.2), h:R+0.6, t});
+  }
+});
+
+/* ===============================================================
+   Tegne-operationer (fælles for skærm/SVG og PDF), alt i cm
+   =============================================================== */
+const OUT = {fill:"#f1f1ef", stroke:"#111", sw:0.035};
+function itemOps(it,x,y){
+  const t=it.t, ops=[];
+  if(it.kind==="hel"){
+    ops.push({k:"path", polys:it.polys, x, y, fill:OUT.fill, stroke:OUT.stroke, sw:OUT.sw});
+    if(t.ring_cm && it.circle) ops.push({k:"circle", cx:x+it.circle.cx, cy:y+it.circle.cy, r:it.circle.r+t.ring_cm, stroke:"#111", sw:0.03, dash:[0.25,0.18]});
+    ops.push({k:"text", x, y:y+it.h+0.45, size:0.32, bold:true, s:navn(it.id)});
+    ops.push({k:"text", x, y:y+it.h+0.85, size:0.28, color:"#555",
+      s:`${fmt(t.w)} × ${fmt(t.h)} cm${t.ring_cm?" · stiplet = sort ring":""}${it.rot?" · drejet 90°":""}`});
+  } else {
+    const R=t.wedge_R, ax=x+0.2, ay=y+R+0.1;
+    ops.push({k:"path", polys:t.wedge, x:ax, y:ay, fill:OUT.fill, stroke:OUT.stroke, sw:OUT.sw});
+    const ex=ax+R*Math.sin(Math.PI/6), ey=ay-R*Math.cos(Math.PI/6);
+    ops.push({k:"line", x1:ax, y1:ay, x2:ax, y2:ay-R, stroke:"#111", sw:0.03, dash:[0.3,0.2]});
+    ops.push({k:"line", x1:ax, y1:ay, x2:ex, y2:ey, stroke:"#111", sw:0.03, dash:[0.3,0.2]});
+    ops.push({k:"dot", cx:ax, cy:ay, r:0.12});
+    ops.push({k:"text", x:ax+0.25, y:ay-0.12, size:0.24, s:"centrum"});
+    ops.push({k:"text", x, y:y+it.h+0.25, size:0.32, bold:true, s:navn(it.id)+" – foldeskabelon"});
+    ops.push({k:"text", x, y:y+it.h+0.65, size:0.28, color:"#555", s:"Stiplet = fold, klip ikke"});
+  }
+  return ops;
+}
+
+/* ===============================================================
+   Sidelayout: A4-sider først, så A3-sider, så delte A3-ark
+   =============================================================== */
+const pages=[];
+function pack(F, list){
+  let cur=null, sx=0, sy=0, rowH=0;
+  const AH=areaH(F);
+  list.sort((a,b)=>b.h-a.h).forEach(it=>{
+    const w=it.w, h=it.h+LBL;
+    if(!cur){cur={F,items:[]};pages.push(cur);sx=0;sy=0;rowH=0;}
+    if(sx+w>F.W){ sx=0; sy+=rowH+GAP; rowH=0; }
+    if(sy+h>AH){ cur={F,items:[]};pages.push(cur); sx=0; sy=0; rowH=0; }
+    cur.items.push({it,x:sx,y:sy}); sx+=w+GAP; rowH=Math.max(rowH,h);
+  });
+}
+pack(FMT.A4, items.filter(i=>!i.tile && i.F===FMT.A4));
+pack(FMT.A3, items.filter(i=>!i.tile && i.F===FMT.A3));
+items.filter(i=>i.tile).forEach(it=>{
+  const F=it.F, vh=areaH(F)-0.4, stepX=F.W-OVER, stepY=vh-OVER;
+  const nx=Math.max(1,Math.ceil((it.w-OVER)/stepX)), ny=Math.max(1,Math.ceil((it.h-OVER)/stepY));
+  for(let r=0;r<ny;r++) for(let c=0;c<nx;c++)
+    pages.push({F, tile:{it,c,r,nx,ny,ox:c*stepX,oy:r*stepY,vh}});
+});
+
+function pageOps(pg,i,n){
+  const F=pg.F, ops=[];
+  let title, sub;
+  if(pg.tile){
+    const {it,c,r,nx,ny,ox,oy,vh}=pg.tile, L="ABCDEFGHIJ";
+    title=navn(it.id);
+    sub=`Ark ${L[r]}${c+1} af ${L[ny-1]}${nx} (${nx*ny} ark) · hele delen ${fmt(it.t.w)} × ${fmt(it.t.h)} cm${it.rot?" · drejet 90°":""} · grå kant = 1 cm overlap: læg næste ark ovenpå og tape`;
+    const inner=[{k:"path", polys:it.polys, x:0, y:0, fill:OUT.fill}];
+    if(c<nx-1) inner.push({k:"rect", x:ox+F.W-OVER, y:oy, w:OVER, h:vh, fill:"#dcdcdc"});
+    if(r<ny-1) inner.push({k:"rect", x:ox, y:oy+vh-OVER, w:F.W, h:OVER, fill:"#dcdcdc"});
+    inner.push({k:"path", polys:it.polys, x:0, y:0, fill:"none", stroke:OUT.stroke, sw:OUT.sw});
+    ops.push({k:"clip", x:0, y:TOP, w:F.W, h:vh, ox, oy, ops:inner});
+    ops.push({k:"rectline", x:0, y:TOP, w:F.W, h:vh, stroke:"#999", sw:0.02});
+    ops.push({k:"text", x:0.3, y:TOP+0.7, size:0.6, bold:true, color:"#999", s:`${L[r]}${c+1}`});
+  } else {
+    title=titel;
+    sub=`${pg.items.length} skabelon${pg.items.length>1?"er":""} · klip langs den sorte linje`;
+    pg.items.forEach(o=>ops.push(...itemOps(o.it,o.x,o.y+TOP)));
+  }
+  // sidehoved – A3 markeres tydeligt
+  let tx=0;
+  if(F.name==="A3"){
+    ops.push({k:"rect", x:0, y:0, w:5.4, h:1.0, fill:"#ffd23f"});
+    ops.push({k:"text", x:0.2, y:0.48, size:0.38, bold:true, s:"A3 – UDSKRIV PÅ A3"});
+    ops.push({k:"text", x:0.2, y:0.84, size:0.24, s:"29,7 × 42 cm · 100 % størrelse"});
+    tx=5.8;
+  }
+  ops.push({k:"text", x:tx, y:0.45, size:0.38, bold:true, s:title});
+  ops.push({k:"text", x:tx, y:0.85, size:0.26, color:"#555", s:sub});
+  ops.push({k:"text", x:F.W, y:0.45, size:0.3, color:"#555", anchor:"end", s:`${F.name} · side ${i+1}/${n}`});
+  ops.push({k:"line", x1:0, y1:1.1, x2:F.W, y2:1.1, stroke:"#111", sw:0.03});
+  // kontrolstreg 5 cm
+  const by=F.H-0.35;
+  ops.push({k:"line", x1:F.W-5, y1:by, x2:F.W, y2:by, stroke:"#111", sw:0.03});
+  ops.push({k:"line", x1:F.W-5, y1:by-0.2, x2:F.W-5, y2:by+0.2, stroke:"#111", sw:0.03});
+  ops.push({k:"line", x1:F.W, y1:by-0.2, x2:F.W, y2:by+0.2, stroke:"#111", sw:0.03});
+  ops.push({k:"text", x:F.W-5.2, y:by+0.1, size:0.24, color:"#555", anchor:"end", s:"kontrol: præcis 5 cm"});
+  return ops;
+}
+
+/* ===============================================================
+   SVG (skærm og print fra browser)
+   =============================================================== */
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+const pd=(polys,dx,dy)=>polys.map(p=>"M"+p.map(([x,y])=>`${(x+dx).toFixed(3)} ${(y+dy).toFixed(3)}`).join("L")+"Z").join("");
+function svgOps(ops){
+  return ops.map(o=>{
+    const st=o.stroke?` stroke="${o.stroke}" stroke-width="${o.sw}"${o.dash?` stroke-dasharray="${o.dash.join(" ")}"`:""}`:"";
+    switch(o.k){
+      case "path": return `<path d="${pd(o.polys,o.x,o.y)}" fill="${o.fill}" fill-rule="evenodd"${st}/>`;
+      case "circle": return `<circle cx="${o.cx}" cy="${o.cy}" r="${o.r}" fill="none"${st}/>`;
+      case "dot": return `<circle cx="${o.cx}" cy="${o.cy}" r="${o.r}" fill="#111"/>`;
+      case "line": return `<line x1="${o.x1}" y1="${o.y1}" x2="${o.x2}" y2="${o.y2}"${st}/>`;
+      case "rect": return `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="${o.fill}"/>`;
+      case "rectline": return `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" fill="none"${st}/>`;
+      case "text": return `<text x="${o.x}" y="${o.y}" font-size="${o.size}" font-family="Arial,Helvetica,sans-serif"${o.bold?' font-weight="700"':""} fill="${o.color||"#111"}"${o.anchor==="end"?' text-anchor="end"':""}>${esc(o.s)}</text>`;
+      case "clip": return `<svg x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" viewBox="${o.ox} ${o.oy} ${o.w} ${o.h}" overflow="hidden">${svgOps(o.ops)}</svg>`;
+    }
+  }).join("");
+}
+const N=pages.length;
+document.getElementById("pages").innerHTML = pages.map((pg,i)=>
+  `<div class="page ${pg.F.name.toLowerCase()}"><svg viewBox="0 0 ${pg.F.W} ${pg.F.H}">${svgOps(pageOps(pg,i,N))}</svg></div>`
+).join("") || "<p style='text-align:center'>Ingen skabeloner fundet.</p>";
+
+const nA4=pages.filter(p=>p.F.name==="A4").length, nA3=N-nA4;
+document.getElementById("sum").innerHTML =
+  `<span class="tag">${nA4} × A4</span>` + (nA3?`<span class="tag a3">${nA3} × A3 – skal udskrives på A3-papir</span>`:"");
+if(rectNote) document.getElementById("sum").innerHTML += `<span style="opacity:.85">Baggrundsbåndene (rene rektangler, 80 cm brede) er ikke med – mål dem op direkte, eller <a href="skabeloner.html?gruppe=baggrund" style="color:#ffd23f">hent dem i 1:1 på A3</a>.</span>`;
+document.getElementById("pdfA4").disabled=!nA4;
+document.getElementById("pdfA3").disabled=!nA3;
+
+/* ===============================================================
+   PDF – skrives direkte (vektor, 1:1), ingen eksterne biblioteker
+   =============================================================== */
+const PT = 72/2.54;                       // punkt pr. cm
+const WIN = {"–":0x96,"—":0x97,"“":0x93,"”":0x94,"„":0x84,"’":0x92,"‘":0x91,"•":0x95,"…":0x85,"€":0x80,"·":0xB7};
+function pdfStr(s){
+  let o="";
+  for(const ch of s){
+    let c = WIN[ch] || ch.charCodeAt(0);
+    if(c>255) c=0x3F;
+    if(c===0x28||c===0x29||c===0x5C) o+="\\"+String.fromCharCode(c);
+    else o+=String.fromCharCode(c);
+  }
+  return "("+o+")";
+}
+const n3=v=>{const s=(+v).toFixed(3).replace(/\.?0+$/,""); return s==="-0"||s===""?"0":s;};
+function rgb(hex){ const h=hex.replace("#",""); const f=h.length===3?h.split("").map(c=>c+c).join(""):h;
+  return [0,2,4].map(i=>(parseInt(f.substr(i,2),16)/255).toFixed(3)).join(" "); }
+function pdfOps(ops){
+  let s="";
+  for(const o of ops){
+    const stroke=()=>{ s+=`${rgb(o.stroke)} RG ${n3(o.sw)} w ${o.dash?`[${o.dash.map(n3).join(" ")}] 0 d`:"[] 0 d"}\n`; };
+    switch(o.k){
+      case "path":{
+        for(const p of o.polys){ p.forEach(([x,y],j)=>{ s+=`${n3(x+o.x)} ${n3(y+o.y)} ${j?"l":"m"}\n`; }); s+="h\n"; }
+        const hasFill=o.fill && o.fill!=="none";
+        if(hasFill) s+=`${rgb(o.fill)} rg\n`;
+        if(o.stroke) stroke();
+        s+= hasFill&&o.stroke ? "B*\n" : hasFill ? "f*\n" : "S\n";
+        break;}
+      case "circle": case "dot":{
+        const k=0.5523*o.r, cx=o.cx, cy=o.cy, r=o.r;
+        s+=`${n3(cx+r)} ${n3(cy)} m ${n3(cx+r)} ${n3(cy+k)} ${n3(cx+k)} ${n3(cy+r)} ${n3(cx)} ${n3(cy+r)} c `+
+           `${n3(cx-k)} ${n3(cy+r)} ${n3(cx-r)} ${n3(cy+k)} ${n3(cx-r)} ${n3(cy)} c `+
+           `${n3(cx-r)} ${n3(cy-k)} ${n3(cx-k)} ${n3(cy-r)} ${n3(cx)} ${n3(cy-r)} c `+
+           `${n3(cx+k)} ${n3(cy-r)} ${n3(cx+r)} ${n3(cy-k)} ${n3(cx+r)} ${n3(cy)} c h\n`;
+        if(o.k==="dot") s+="0 0 0 rg f\n"; else { stroke(); s+="S\n"; }
+        break;}
+      case "line": stroke(); s+=`${n3(o.x1)} ${n3(o.y1)} m ${n3(o.x2)} ${n3(o.y2)} l S\n`; break;
+      case "rect": s+=`${rgb(o.fill)} rg ${n3(o.x)} ${n3(o.y)} ${n3(o.w)} ${n3(o.h)} re f\n`; break;
+      case "rectline": stroke(); s+=`${n3(o.x)} ${n3(o.y)} ${n3(o.w)} ${n3(o.h)} re S\n`; break;
+      case "text":{
+        let x=o.x; if(o.anchor==="end") x-= o.s.length*o.size*0.5;
+        s+=`${rgb(o.color||"#111")} rg BT /${o.bold?"F2":"F1"} ${n3(o.size)} Tf 1 0 0 -1 ${n3(x)} ${n3(o.y)} Tm ${pdfStr(o.s)} Tj ET\n`;
+        break;}
+      case "clip":
+        s+=`q ${n3(o.x)} ${n3(o.y)} ${n3(o.w)} ${n3(o.h)} re W n 1 0 0 1 ${n3(o.x-o.ox)} ${n3(o.y-o.oy)} cm\n`+pdfOps(o.ops)+"Q\n";
+        break;
+    }
+  }
+  return s;
+}
+function makePDF(sel){
+  const objs=[];                                  // objekt-nr = indeks+1
+  const add=s=>{objs.push(s); return objs.length;};
+  add(""); add("");                               // 1 katalog, 2 sidetræ (udfyldes til sidst)
+  const f1=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  const f2=add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids=[];
+  sel.forEach(({pg,i})=>{
+    const F=pg.F, pw=F.pw*PT, ph=F.ph*PT;
+    // cm-koordinater med y nedad, origo i udskriftsområdets øverste venstre hjørne (1 cm margen)
+    const body=`q ${n3(PT)} 0 0 ${n3(-PT)} ${n3(PT)} ${n3(ph-PT)} cm 1 J 1 j\n`+pdfOps(pageOps(pg,i,N))+"Q\n";
+    const c=add(`<< /Length ${body.length} >>\nstream\n${body}endstream`);
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${n3(pw)} ${n3(ph)}] /Resources << /Font << /F1 ${f1} 0 R /F2 ${f2} 0 R >> >> /Contents ${c} 0 R >>`));
+  });
+  objs[0]="<< /Type /Catalog /Pages 2 0 R >>";
+  objs[1]=`<< /Type /Pages /Kids [${kids.map(k=>k+" 0 R").join(" ")}] /Count ${kids.length} >>`;
+  let out="%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"; const off=[];
+  objs.forEach((o,i)=>{ off.push(out.length); out+=`${i+1} 0 obj\n${o}\nendobj\n`; });
+  const xref=out.length;
+  out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+off.map(o=>String(o).padStart(10,"0")+" 00000 n \n").join("");
+  out+=`trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const bytes=new Uint8Array(out.length);
+  for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
+  return new Blob([bytes],{type:"application/pdf"});
+}
+window.makePDF=makePDF;
+function download(which){
+  const sel=pages.map((pg,i)=>({pg,i})).filter(({pg})=>!which||pg.F.name===which);
+  if(!sel.length) return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(makePDF(sel));
+  a.download=`juledoer-skabeloner-${slug}${which?"-"+which:""}.pdf`.replace(/[^\w.-]+/g,"_");
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+document.getElementById("pdfAll").onclick=()=>download(null);
+document.getElementById("pdfA4").onclick=()=>download("A4");
+document.getElementById("pdfA3").onclick=()=>download("A3");
+if(q.get("pdf")) download(q.get("pdf")==="1"?null:q.get("pdf").toUpperCase());
+</script>
+</body>
+</html>
