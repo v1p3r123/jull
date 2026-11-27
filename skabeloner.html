@@ -22,9 +22,31 @@ body{margin:0;font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;color:#1
 .page.a4{width:190mm;height:277mm}
 .page.a3{width:277mm;height:400mm;page:a3}
 .page svg{display:block;width:100%;height:100%}
+.wrap{display:flex;align-items:flex-start;gap:0}
+.wrap .pages{flex:1;min-width:0;overflow-x:auto}
+.valg{position:sticky;top:var(--barH,96px);width:330px;flex:none;max-height:calc(100vh - var(--barH,96px));overflow:auto;background:#fff;border-right:1px solid #ddd;padding:14px 14px 40px;font-size:.85rem}
+.valg[hidden]{display:none}
+.valg h2{font-size:.95rem;margin:0 0 8px}
+.valg .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.valg .row button{background:#f1f1ef;border:1px solid #ccc;border-radius:999px;padding:4px 11px;font:inherit;font-size:.78rem;cursor:pointer;color:#111}
+.valg input[type=search]{width:100%;padding:7px 10px;border:1px solid #ccc;border-radius:8px;font:inherit;font-size:.85rem;margin-bottom:8px}
+.valg .opt{display:flex;gap:8px;align-items:flex-start;background:#fff8d6;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:.8rem;line-height:1.35}
+.valg details{border-top:1px solid #eee;padding:6px 0}
+.valg summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:700;list-style:none}
+.valg summary::-webkit-details-marker{display:none}
+.valg summary .n{margin-left:auto;font-weight:400;color:#666;font-size:.75rem}
+.valg label.it{display:flex;align-items:center;gap:8px;padding:3px 0 3px 22px;cursor:pointer}
+.valg label.it svg{width:26px;height:26px;flex:none}
+.valg label.it .sz{margin-left:auto;color:#777;font-size:.72rem;white-space:nowrap}
+.valg label.it.skjult{display:none}
+@media (max-width:900px){
+  .wrap{display:block}
+  .valg{position:static;width:auto;max-height:none;border-right:none;border-bottom:1px solid #ddd}
+}
 @media print{
   body{background:#fff}
-  .bar{display:none}
+  .bar,.valg{display:none}
+  .wrap{display:block}
   .pages{padding:0}
   .page{margin:0;box-shadow:none}
 }
@@ -34,13 +56,23 @@ body{margin:0;font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;color:#1
 <div class="bar">
   <b id="title">Skabeloner</b>
   <span class="hint">Udskriv i <b>100 % / faktisk størrelse</b> – ikke “tilpas til side”. Kontrolstregen nederst på hver side skal måle præcis 5 cm. <b>A3-sider er markeret med gult</b> og skal udskrives på A3-papir.</span>
+  <button class="sec" id="valgBtn">Vælg skabeloner</button>
   <button id="pdfAll">Download PDF</button>
   <button class="sec" id="pdfA4">PDF kun A4</button>
   <button class="sec" id="pdfA3">PDF kun A3</button>
   <button class="sec" onclick="print()">Udskriv</button>
   <div class="sum" id="sum"></div>
 </div>
-<div class="pages" id="pages"></div>
+<div class="wrap">
+  <aside class="valg" id="valg" hidden>
+    <h2>Vælg skabeloner</h2>
+    <label class="opt"><input type="checkbox" id="taet"> <span><b>Pladsbesparende</b> – skabelonerne drejes og pakkes tæt, så der bruges færrest mulige ark.</span></label>
+    <input type="search" id="soeg" placeholder="Søg, fx “øje”, “lys”, “snefnug” …">
+    <div class="row"><button id="vAlle">Vælg alle</button><button id="vIngen">Fravælg alle</button></div>
+    <div id="valgListe"></div>
+  </aside>
+  <div class="pages" id="pages"></div>
+</div>
 
 <script src="skabeloner/skabeloner.js"></script>
 <script>
@@ -58,25 +90,37 @@ const gruppe = id => (META[id] && META[id].g) || EXTRA_G[id] || "";
 const lag = id => (META[id] && META[id].lag) || EXTRA_LAG[id] || 4.5;
 const ALIAS = {juletraeer:["graner"], figur:["pistol","sloejfe"]};
 
+const GNAVN = {baggrund:"Baggrund", sol:"Retro-solen", skyline:"Skyline", graner:"Juletræer", logo:"GTA VI-logo", bil:"Bilen",
+  sne:"Sne forneden", kjole:"Kjolen", hud:"Ansigt, hår & hænder", sloejfe:"Rød sløjfe", krans:"Lucia-krans", pistol:"Pistolen",
+  snefnug:"Snefnug", haandtag:"Dørhåndtag"};
+const ALLE = Object.keys(D).sort((a,b)=>lag(a)-lag(b));
+const RECT = ["bg1","bg2","bg3","bg4"];     // baggrundsbåndene (rene rektangler, 80 cm brede) – kun med, når de vælges særskilt
+
 const q = new URLSearchParams(location.search);
-let ids = Object.keys(D).sort((a,b)=>lag(a)-lag(b));
-let titel = "Alle skabeloner", slug = "alle";
-if(q.get("del")){
-  ids = q.get("del").split(",").filter(id=>D[id]);
-  titel = ids.length===1 ? navn(ids[0]) : "Udvalgte skabeloner"; slug = ids.join("-");
-} else if(q.get("gruppe")){
-  const gs = ALIAS[q.get("gruppe")] || q.get("gruppe").split(",");
-  ids = ids.filter(id=>gs.includes(gruppe(id)));
-  titel = "Skabeloner – "+q.get("gruppe"); slug = q.get("gruppe");
-}
-// Baggrundsbåndene er rene rektangler på 80 cm bredde – de måles op direkte og kommer kun med, når de vælges særskilt
-const RECT = ["bg1","bg2","bg3","bg4"];
-let rectNote = false;
-if(!q.get("del") && q.get("gruppe")!=="baggrund" && ids.some(id=>RECT.includes(id))){ ids = ids.filter(id=>!RECT.includes(id)); rectNote = true; }
 const mode = q.get("type") || "alt";      // "alt" | "fold" | "hel"
-if(mode!=="alt") slug += "-"+mode;
-document.getElementById("title").textContent = titel;
-document.title = titel + " – skabeloner 1:1";
+let TAET = q.get("taet")==="1";            // pladsbesparende pakning
+let VALGT = null;                          // Set af valgte id'er, når der er valgt i listen
+let ids, titel, slug, rectNote;
+
+function vaelg(){
+  ids = ALLE.slice(); titel = "Alle skabeloner"; slug = "alle"; rectNote = false;
+  if(VALGT){
+    ids = ALLE.filter(id=>VALGT.has(id));
+    titel = ids.length===1 ? navn(ids[0]) : `Udvalgte skabeloner (${ids.length})`; slug = ids.length<=6 ? ids.join("-") : "udvalgte-"+ids.length;
+  } else if(q.get("del")){
+    ids = q.get("del").split(",").filter(id=>D[id]);
+    titel = ids.length===1 ? navn(ids[0]) : "Udvalgte skabeloner"; slug = ids.join("-");
+  } else if(q.get("gruppe")){
+    const gs = ALIAS[q.get("gruppe")] || q.get("gruppe").split(",");
+    ids = ids.filter(id=>gs.includes(gruppe(id)));
+    titel = "Skabeloner – "+q.get("gruppe"); slug = q.get("gruppe");
+  }
+  if(!VALGT && !q.get("del") && q.get("gruppe")!=="baggrund" && ids.some(id=>RECT.includes(id))){ ids = ids.filter(id=>!RECT.includes(id)); rectNote = true; }
+  if(mode!=="alt") slug += "-"+mode;
+  if(TAET) slug += "-taet";
+  document.getElementById("title").textContent = titel;
+  document.title = titel + " – skabeloner 1:1";
+}
 
 /* ===============================================================
    Formater (alt i cm). Udskriftsområde = papir minus 1 cm margen.
@@ -92,7 +136,9 @@ const fmt = v => (Math.round(v*10)/10).toString().replace(".",",");
 function rotPolys(polys,h){ return polys.map(p=>p.map(([x,y])=>[h-y,x])); }
 
 /* Alle elementer der skal på papir */
-const items = [];
+let items = [];
+function byggItems(){
+items = [];
 ids.forEach(id=>{
   const t=D[id]; if(!t) return;
   if(mode!=="fold"){
@@ -117,6 +163,12 @@ ids.forEach(id=>{
     items.push({id, kind:"fold", F:FMT.A4, tile:false, w:Math.max(R*Math.sin(Math.PI/6)+0.6,4.2), h:R+0.6, t});
   }
 });
+}
+/* Drej en hel skabelon 90° (bruges af den pladsbesparende pakning) */
+function drej(it){
+  const c=it.circle ? {cx:it.h-it.circle.cy, cy:it.circle.cx, r:it.circle.r} : null;
+  return Object.assign({}, it, {rot:!it.rot, w:it.h, h:it.w, polys:rotPolys(it.polys,it.h), circle:c});
+}
 
 /* ===============================================================
    Tegne-operationer (fælles for skærm/SVG og PDF), alt i cm
@@ -127,9 +179,13 @@ function itemOps(it,x,y){
   if(it.kind==="hel"){
     ops.push({k:"path", polys:it.polys, x, y, fill:OUT.fill, stroke:OUT.stroke, sw:OUT.sw});
     if(t.ring_cm && it.circle) ops.push({k:"circle", cx:x+it.circle.cx, cy:y+it.circle.cy, r:it.circle.r+t.ring_cm, stroke:"#111", sw:0.03, dash:[0.25,0.18]});
-    ops.push({k:"text", x, y:y+it.h+0.45, size:0.32, bold:true, s:navn(it.id)});
-    ops.push({k:"text", x, y:y+it.h+0.85, size:0.28, color:"#555",
-      s:`${fmt(t.w)} × ${fmt(t.h)} cm${t.ring_cm?" · stiplet = sort ring":""}${it.rot?" · drejet 90°":""}`});
+    if(TAET){                                 // én kort linje under formen
+      ops.push({k:"text", x, y:y+it.h+0.38, size:0.26, bold:true, s:navn(it.id)});
+    } else {
+      ops.push({k:"text", x, y:y+it.h+0.45, size:0.32, bold:true, s:navn(it.id)});
+      ops.push({k:"text", x, y:y+it.h+0.85, size:0.28, color:"#555",
+        s:`${fmt(t.w)} × ${fmt(t.h)} cm${t.ring_cm?" · stiplet = sort ring":""}${it.rot?" · drejet 90°":""}`});
+    }
   } else {
     const R=t.wedge_R, ax=x+0.2, ay=y+R+0.1;
     ops.push({k:"path", polys:t.wedge, x:ax, y:ay, fill:OUT.fill, stroke:OUT.stroke, sw:OUT.sw});
@@ -147,33 +203,88 @@ function itemOps(it,x,y){
 /* ===============================================================
    Sidelayout: A4-sider først, så A3-sider, så delte A3-ark
    =============================================================== */
-const pages=[];
+let pages=[];
 /* Små dele (fx ansigtsdetaljer) er smallere end deres navn – pladsen regnes ud fra det bredeste af form og tekst */
 const _ctx=document.createElement("canvas").getContext("2d");
 function lblW(it){
-  _ctx.font="bold 32px Inter, Segoe UI, Arial, sans-serif";
+  const px = TAET ? 26 : 32;
+  _ctx.font=`bold ${px}px Arial, Helvetica, sans-serif`;
   const t=it.kind==="fold" ? navn(it.id)+" – foldeskabelon" : navn(it.id);
   return _ctx.measureText(t).width/100*1.05;
 }
-function pack(F, list){
+const lbl = () => TAET ? 0.55 : LBL;
+const gap = () => TAET ? 0.45 : GAP;
+const boks = it => ({w:Math.max(it.w, lblW(it)), h:it.h+lbl()});
+
+/* Standard: rækker efter højde (som før) */
+function packRaekker(F, list){
   let cur=null, sx=0, sy=0, rowH=0;
   const AH=areaH(F);
   list.sort((a,b)=>b.h-a.h).forEach(it=>{
-    const w=Math.min(F.W, Math.max(it.w, lblW(it))), h=it.h+LBL;
+    const b=boks(it), w=Math.min(F.W,b.w), h=b.h;
     if(!cur){cur={F,items:[]};pages.push(cur);sx=0;sy=0;rowH=0;}
-    if(sx+w>F.W){ sx=0; sy+=rowH+GAP; rowH=0; }
+    if(sx+w>F.W){ sx=0; sy+=rowH+gap(); rowH=0; }
     if(sy+h>AH){ cur={F,items:[]};pages.push(cur); sx=0; sy=0; rowH=0; }
-    cur.items.push({it,x:sx,y:sy}); sx+=w+GAP; rowH=Math.max(rowH,h);
+    cur.items.push({it,x:sx,y:sy}); sx+=w+gap(); rowH=Math.max(rowH,h);
   });
 }
-pack(FMT.A4, items.filter(i=>!i.tile && i.F===FMT.A4));
-pack(FMT.A3, items.filter(i=>!i.tile && i.F===FMT.A3));
-items.filter(i=>i.tile).forEach(it=>{
-  const F=it.F, vh=areaH(F)-0.4, stepX=F.W-OVER, stepY=vh-OVER;
-  const nx=Math.max(1,Math.ceil((it.w-OVER)/stepX)), ny=Math.max(1,Math.ceil((it.h-OVER)/stepY));
-  for(let r=0;r<ny;r++) for(let c=0;c<nx;c++)
-    pages.push({F, tile:{it,c,r,nx,ny,ox:c*stepX,oy:r*stepY,vh}});
-});
+
+/* Pladsbesparende: MaxRects (bedste korte side) – hver skabelon prøves i begge retninger på alle åbne ark */
+function packTaet(F, list){
+  const G=gap(), BW=F.W+G, BH=areaH(F)+G;
+  const ark=[];
+  const nytArk=()=>{ const a={F,items:[],fri:[{x:0,y:0,w:BW,h:BH}]}; ark.push(a); return a; };
+  function bedst(a,it){
+    let best=null;
+    const varianter = it.kind==="hel" && !it.tile ? [it, drej(it)] : [it];
+    for(const v of varianter){
+      const b=boks(v), w=b.w+G, h=b.h+G;
+      for(const r of a.fri){
+        if(w<=r.w+1e-9 && h<=r.h+1e-9){
+          const kort=Math.min(r.w-w,r.h-h), lang=Math.max(r.w-w,r.h-h);
+          if(!best || kort<best.kort || (kort===best.kort && lang<best.lang)) best={v,x:r.x,y:r.y,w,h,kort,lang};
+        }
+      }
+    }
+    return best;
+  }
+  function placer(a,p){
+    const nye=[];
+    a.fri.forEach(r=>{
+      if(p.x>=r.x+r.w || p.x+p.w<=r.x || p.y>=r.y+r.h || p.y+p.h<=r.y){ nye.push(r); return; }
+      if(p.x>r.x) nye.push({x:r.x,y:r.y,w:p.x-r.x,h:r.h});
+      if(p.x+p.w<r.x+r.w) nye.push({x:p.x+p.w,y:r.y,w:r.x+r.w-p.x-p.w,h:r.h});
+      if(p.y>r.y) nye.push({x:r.x,y:r.y,w:r.w,h:p.y-r.y});
+      if(p.y+p.h<r.y+r.h) nye.push({x:r.x,y:p.y+p.h,w:r.w,h:r.y+r.h-p.y-p.h});
+    });
+    const inde=(a,b)=>a.x>=b.x-1e-9&&a.y>=b.y-1e-9&&a.x+a.w<=b.x+b.w+1e-9&&a.y+a.h<=b.y+b.h+1e-9;
+    a.fri=nye.filter((r,i)=>!nye.some((o,j)=>j!==i && inde(r,o) && !(inde(o,r) && j>i)));
+    a.items.push({it:p.v,x:p.x,y:p.y});
+  }
+  // største først (areal af boksen)
+  list.slice().sort((a,b)=>{const A=boks(a),B=boks(b); return B.w*B.h-A.w*A.h;}).forEach(it=>{
+    let valg=null, va=null;
+    for(const a of ark){ const p=bedst(a,it); if(p && (!valg || p.kort<valg.kort)){ valg=p; va=a; } }
+    if(!valg){ va=nytArk(); valg=bedst(va,it); }
+    if(!valg){ va.items.push({it,x:0,y:0}); return; }   // (sker ikke – alt her passer på arket)
+    placer(va,valg);
+  });
+  ark.forEach(a=>pages.push({F:a.F,items:a.items}));
+}
+
+function layout(){
+  pages=[];
+  const pack = TAET ? packTaet : packRaekker;
+  // i pladsbesparende tilstand kan dele, der kun passede på A4 drejet, stadig drejes tilbage – rotationen afgøres af pakningen
+  pack(FMT.A4, items.filter(i=>!i.tile && i.F===FMT.A4));
+  pack(FMT.A3, items.filter(i=>!i.tile && i.F===FMT.A3));
+  items.filter(i=>i.tile).forEach(it=>{
+    const F=it.F, vh=areaH(F)-0.4, stepX=F.W-OVER, stepY=vh-OVER;
+    const nx=Math.max(1,Math.ceil((it.w-OVER)/stepX)), ny=Math.max(1,Math.ceil((it.h-OVER)/stepY));
+    for(let r=0;r<ny;r++) for(let c=0;c<nx;c++)
+      pages.push({F, tile:{it,c,r,nx,ny,ox:c*stepX,oy:r*stepY,vh}});
+  });
+}
 
 function pageOps(pg,i,n){
   const F=pg.F, ops=[];
@@ -235,7 +346,10 @@ function svgOps(ops){
     }
   }).join("");
 }
-const N=pages.length;
+let N=0;
+function render(){
+vaelg(); byggItems(); layout();
+N=pages.length;
 document.getElementById("pages").innerHTML = pages.map((pg,i)=>
   `<div class="page ${pg.F.name.toLowerCase()}"><svg viewBox="0 0 ${pg.F.W} ${pg.F.H}">${svgOps(pageOps(pg,i,N))}</svg></div>`
 ).join("") || "<p style='text-align:center'>Ingen skabeloner fundet.</p>";
@@ -246,6 +360,7 @@ document.getElementById("sum").innerHTML =
 if(rectNote) document.getElementById("sum").innerHTML += `<span style="opacity:.85">Baggrundsbåndene (rene rektangler, 80 cm brede) er ikke med – mål dem op direkte, eller <a href="skabeloner.html?gruppe=baggrund" style="color:#ffd23f">hent dem i 1:1 på A3</a>.</span>`;
 document.getElementById("pdfA4").disabled=!nA4;
 document.getElementById("pdfA3").disabled=!nA3;
+}
 
 /* ===============================================================
    PDF – skrives direkte (vektor, 1:1), ingen eksterne biblioteker
@@ -337,6 +452,68 @@ function download(which){
 document.getElementById("pdfAll").onclick=()=>download(null);
 document.getElementById("pdfA4").onclick=()=>download("A4");
 document.getElementById("pdfA3").onclick=()=>download("A3");
+
+/* ===============================================================
+   Vælg flere skabeloner
+   =============================================================== */
+const $=id=>document.getElementById(id);
+function miniSVG(t){
+  const m=Math.max(t.w,t.h)*0.08, w=t.w+2*m, h=t.h+2*m;
+  return `<svg viewBox="0 0 ${w.toFixed(2)} ${h.toFixed(2)}"><path d="${pd(t.polys,m,m)}" fill="#111" fill-rule="evenodd"/></svg>`;
+}
+function byggListe(){
+  const grupper={};
+  ALLE.forEach(id=>{ const g=gruppe(id)||"andet"; (grupper[g]=grupper[g]||[]).push(id); });
+  $("valgListe").innerHTML=Object.entries(grupper).map(([g,list])=>`
+    <details data-g="${g}">
+      <summary><input type="checkbox" class="gcb" data-g="${g}"> ${esc(GNAVN[g]||g)} <span class="n"></span></summary>
+      ${list.map(id=>`<label class="it" data-s="${esc((navn(id)+" "+id).toLowerCase())}"><input type="checkbox" class="cb" value="${id}">${miniSVG(D[id])}<span>${esc(navn(id))}</span><span class="sz">${fmt(D[id].w)}×${fmt(D[id].h)}</span></label>`).join("")}
+    </details>`).join("");
+}
+function synkListe(){
+  const valgt=new Set(ids);
+  document.querySelectorAll("#valgListe .cb").forEach(c=>c.checked=valgt.has(c.value));
+  document.querySelectorAll("#valgListe details").forEach(d=>{
+    const cbs=[...d.querySelectorAll(".cb")], n=cbs.filter(c=>c.checked).length, g=d.querySelector(".gcb");
+    g.checked=n===cbs.length; g.indeterminate=n>0&&n<cbs.length;
+    d.querySelector(".n").textContent=`${n}/${cbs.length}`;
+  });
+  $("valgBtn").textContent=`Vælg skabeloner (${ids.length})`;
+  $("taet").checked=TAET;
+}
+function opdaterURL(){
+  const p=new URLSearchParams();
+  if(VALGT) p.set("del",[...VALGT].join(","));
+  else ["del","gruppe"].forEach(k=>q.get(k)&&p.set(k,q.get(k)));
+  if(mode!=="alt") p.set("type",mode);
+  if(TAET) p.set("taet","1");
+  history.replaceState(null,"","?"+p.toString().replace(/%2C/g,","));
+}
+function nyt(){ render(); synkListe(); opdaterURL(); }
+function fraListe(){ VALGT=new Set([...document.querySelectorAll("#valgListe .cb:checked")].map(c=>c.value)); nyt(); }
+byggListe();
+$("valgListe").addEventListener("change",e=>{
+  if(e.target.classList.contains("gcb")){
+    const on=e.target.checked;
+    e.target.closest("details").querySelectorAll("label.it:not(.skjult) .cb").forEach(c=>c.checked=on);
+  }
+  fraListe();
+});
+$("valgListe").addEventListener("click",e=>{ if(e.target.classList.contains("gcb")) e.stopPropagation(); });
+$("taet").addEventListener("change",e=>{ TAET=e.target.checked; nyt(); });
+$("vAlle").onclick=()=>{ document.querySelectorAll("#valgListe label.it:not(.skjult) .cb").forEach(c=>c.checked=true); fraListe(); };
+$("vIngen").onclick=()=>{ document.querySelectorAll("#valgListe label.it:not(.skjult) .cb").forEach(c=>c.checked=false); fraListe(); };
+$("soeg").addEventListener("input",e=>{
+  const t=e.target.value.trim().toLowerCase();
+  document.querySelectorAll("#valgListe label.it").forEach(l=>l.classList.toggle("skjult",!!t && !l.dataset.s.includes(t)));
+  document.querySelectorAll("#valgListe details").forEach(d=>{ d.open=!!t && !!d.querySelector("label.it:not(.skjult)"); });
+});
+$("valgBtn").onclick=()=>{ const v=$("valg"); v.hidden=!v.hidden; $("valgBtn").classList.toggle("sec",v.hidden); };
+const saetBarH=()=>document.documentElement.style.setProperty("--barH",document.querySelector(".bar").offsetHeight+"px");
+addEventListener("resize",saetBarH);
+
+render(); synkListe(); saetBarH();
+if(q.get("vaelg")){ $("valg").hidden=false; $("valgBtn").classList.remove("sec"); }
 if(q.get("pdf")) download(q.get("pdf")==="1"?null:q.get("pdf").toUpperCase());
 </script>
 </body>

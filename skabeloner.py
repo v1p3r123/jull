@@ -6,8 +6,8 @@ konturen findes med sub-pixel-præcision og gemmes som polygoner i cm.
 Skala: motivet fylder dørens bredde (80 cm) – samme skala vandret og lodret,
 så formerne ikke bliver forvrænget.
 
-Kør:  python tools/skabeloner.py
-Output: skabeloner/skabeloner.json  +  tools/kontrol_*.png (overlay til kontrol)
+Kør:  python skabeloner.py   (eller tools/skabeloner.py i den gamle mappestruktur)
+Output: skabeloner/skabeloner.json + skabeloner/skabeloner.js  +  kontrol.png (overlay til kontrol)
 """
 import json, math, sys
 from pathlib import Path
@@ -22,7 +22,7 @@ TOOLS = Path(__file__).resolve().parent
 if TOOLS.name == "tools" and (TOOLS.parent / "doer.png").exists():
     ROOT, OUT = TOOLS.parent, TOOLS.parent / "skabeloner"
 else:
-    ROOT, OUT = TOOLS, TOOLS
+    ROOT, OUT = TOOLS, TOOLS / "skabeloner"
 IMG = Image.open(ROOT / "doer.png").convert("RGB")
 W, H = IMG.size
 ARR = np.asarray(IMG).astype(float)
