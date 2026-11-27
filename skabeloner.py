@@ -391,6 +391,58 @@ def flake_template(spec):
                         "wedge_R": round(Rmax, 2), "model": model}
 
 
+def snap_profil(pts, tags, lukket=True, grow=2.0, glat_px=1.0, skridt=0.35):
+    """Aktiv kontur direkte på fotoet (kubisk interpolation, fotopixel).
+    tags pr. støttepunkt: "k" = farvekant (50 % mellem farven indenfor og udenfor),
+                          "l" = mørk streg (kanten lægges midt i stregen, fx kæbelinjen).
+    Normalen peger udad (mod venstre i kurvens retning for en kurve med uret i billedkoordinater)."""
+    P0 = np.array(pts, float)
+    seg = np.vstack([P0, P0[:1]]) if lukket else P0
+    d = np.r_[0, np.cumsum(np.hypot(*np.diff(seg, axis=0).T))]
+    t = np.arange(0, d[-1] + 1e-9, skridt)
+    P = np.c_[np.interp(t, d, seg[:, 0]), np.interp(t, d, seg[:, 1])]
+    # tag for hvert punkt: fra nærmeste støttepunkt-segment
+    tg = np.array([tags[min(int(np.searchsorted(d, v, "right")) - 1, len(tags) - 1)] for v in t])
+    n = len(P)
+    if lukket:
+        tan = np.roll(P, -2, 0) - np.roll(P, 2, 0)
+    else:
+        tan = np.gradient(P, axis=0)
+    nor = np.c_[tan[:, 1], -tan[:, 0]] / np.maximum(np.hypot(*tan.T), 1e-9)[:, None]
+    if lukket and 0.5 * np.sum(P[:, 0] * np.roll(P[:, 1], -1) - np.roll(P[:, 0], -1) * P[:, 1]) < 0:
+        nor = -nor
+    ss = np.arange(-grow, grow + 1e-9, 0.05)
+    lum = ndi.gaussian_filter(ARR.mean(2), 0.6)
+    flyt = np.zeros(n); ok = np.zeros(n, bool)
+    for i in range(n):
+        q = P[i] + ss[:, None] * nor[i]
+        if tg[i] == "l":
+            v = ndi.map_coordinates(lum, [q[:, 1], q[:, 0]], order=3)
+            j = int(np.argmin(v))
+            if 0 < j < len(ss) - 1:
+                a, b, c = v[j - 1], v[j], v[j + 1]
+                den = a - 2 * b + c
+                flyt[i] = ss[j] + (0.5 * (a - c) / den * 0.05 if den > 1e-9 else 0); ok[i] = True
+            continue
+        col = np.stack([ndi.map_coordinates(ARR[..., ch], [q[:, 1], q[:, 0]], order=3) for ch in range(3)], 1)
+        ind, ud = col[:8].mean(0), col[-8:].mean(0)                 # farven inderst og yderst i profilen
+        D = np.linalg.norm(ud - ind)
+        if D < 25:                                                  # ingen tydelig kant – punktet bliver
+            continue
+        f = np.linalg.norm(col - ind, axis=1) / D                   # 0 = indenfor, 1 = udenfor
+        kr = np.nonzero((f[:-1] < 0.5) & (f[1:] >= 0.5))[0]
+        if len(kr):
+            j = kr[np.argmin(np.abs(ss[kr]))]
+            flyt[i] = ss[j] + (0.5 - f[j]) / (f[j + 1] - f[j]) * 0.05; ok[i] = True
+    if ok.any():
+        idx = np.arange(n)
+        flyt = np.interp(idx, idx[ok], flyt[ok], period=n if lukket else None)
+        flyt = ndi.median_filter(flyt, size=5, mode="wrap" if lukket else "nearest")
+        sg = glat_px / skridt
+        flyt = ndi.gaussian_filter1d(flyt, sg, mode="wrap" if lukket else "nearest")
+    return P + flyt[:, None] * nor
+
+
 def spor_ansigt():
     """Ansigtsdetaljer sporet i fotoet (fotopixel). Returnerer {id: [polygoner]} – iris og næse beregnes ud fra sporet."""
     import regioner as RG
@@ -624,6 +676,8 @@ def main(only=None):
     ANSIGT = dict(RG.ANSIGT_DELE)
     if not only or any(k in only for k in ANSIGT):
         ANSIGT.update(spor_ansigt())                          # sporede kanter erstatter håndkonturerne
+    # ansigtet uden detaljer: én ren kontur trukket ud på hud-kanten (og midt i kæbelinjen)
+    ANSIGT["ansigt"] = [snap_profil([p for p, _ in RG.ANSIGT_REN], [t for _, t in RG.ANSIGT_REN])]
     for rid, rp in {**RG.RINGE, **ANSIGT}.items():
         if only and rid not in only:
             continue

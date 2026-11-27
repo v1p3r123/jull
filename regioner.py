@@ -62,10 +62,10 @@ HAIR = [(115, 200), (125, 170), (140, 148)]
 GREEN = [(150, 135), (175, 138)]
 reg("haar", inc=HAIR, occ=GREEN, seed=(115, 200),
     ext=[(126, 128), (190, 128), (196, 150), (192, 180), (178, 189), (152, 186), (142, 192), (134, 196), (132, 258), (90, 258), (90, 215), (104, 200), (112, 175), (119, 150)], tol=45)
-reg("ansigt", inc=SKIN[:3], seed=(160, 170), close=1.0, tol=40,
-    ext=[(128, 138), (186, 138), (184.5, 150), (184, 165), (181, 174), (175, 183), (170, 188), (152, 186), (140, 184), (128, 168)])
+# "ansigt" spores nu som ren kontur med aktiv kontur – se ANSIGT_REN nederst
 reg("hals", inc=SKIN, seed=(165, 195), occ_mode="white", tol=40,
-    ext=[(140, 184), (152, 186), (170, 188), (175, 183), (181, 174), (192, 181), (192, 203), (138, 203)])
+    ext=[(142.5, 171), (144, 170.5), (149, 175.5), (153, 179.5), (157, 182.5), (161, 184), (166, 182.5), (169.5, 181),
+         (171, 186), (192, 190), (192, 203), (138, 203), (140, 185)])     # går ca. 2,5 px op under kæbelinjen (limkant)
 reg("haandH", inc=[(214, 210), (208, 200), (220, 195)], occ=[(205, 185), (215, 165)], seed=(212, 210), occ_mode="white",
     ext=[(203, 180), (222, 178), (226, 190), (225, 205), (219, 224), (205, 226), (202, 205), (205, 190)])
 reg("haandV", inc=[(95, 325), (80, 327)], seed=(95, 325), occ_mode="white",
@@ -82,10 +82,6 @@ reg("sloejfe", inc=REDP, seed=(155, 262),
 # ------------------------------------------------------------------ bilen (flader bag lygter, gitter m.m.)
 # mode "full": hele afgrænsningen er delen (alt indenfor er bil – også det, der ligger under kjolen).
 # mode "notwhite": alt der ikke er hvidt (sne, snefnug, kjole); force = områder under kjolen, der tages med.
-reg("hjelmV", inc=[(70, 320)], mode="full", seed=(70, 320),
-    ext=[(55, 309), (70, 307), (85, 305), (100, 303), (112, 300), (140, 300), (188, 312), (190, 341), (55, 341)])
-reg("hjelmH", inc=[(300, 340)], mode="full", seed=(300, 340),
-    ext=[(244, 316), (255, 318), (285, 325), (323, 336), (323, 350), (244, 350)])
 reg("gitter", inc=[(140, 360)], mode="full", seed=(140, 360),
     ext=[(126, 344), (186, 344), (186, 383), (126, 383)])
 reg("frontV", inc=[(80, 420)], mode="notwhite", seed=(80, 420),
@@ -125,20 +121,85 @@ def sun_band(ya, yb, n=90):
 # Hele solen i én skabelon: skiven ned til horisonten, de 3 orange striber er udskæringer (huller) i skiven
 SOL_POLYS = [sun_band(SUN_C[1] - SUN_R + 0.01, SUN_BUND, 160)] +             [sun_band(ya, yb) for ya, yb in [(201.5, 205.5), (212.0, 218.5), (226.5, 233.5)]]
 
+# ------------------------------------------------------------------ bilens overkant (hvor bilen begynder og byen slutter)
+_FOTO = np.asarray(Image.open(__import__("pathlib").Path(__file__).with_name("doer.png")).convert("RGB")).astype(float)
+
+
+def kant_lodret(xs, y_gaet, win=4.0, bred=1.0, modus="kontrast"):
+    """Måler pr. kolonne x (sub-pixel) hvor farven skifter fra 'over' til 'under' – 50 % mellem de to farver.
+    y_gaet(x) = startgæt. Hver kolonne er gennemsnittet af en strimmel på ±bred/2 px."""
+    ys = []
+    for x in xs:
+        yg = y_gaet(x)
+        t = np.arange(yg - win, yg + win + 1e-9, 0.05)
+        cols = []
+        for dx in np.linspace(-bred / 2, bred / 2, 3):
+            cols.append(np.stack([ndi.map_coordinates(_FOTO[..., c], [t, np.full_like(t, x + dx)], order=3) for c in range(3)], 1))
+        col = np.mean(cols, 0)
+        over = col[:12].mean(0)
+        dd = np.linalg.norm(col - over, axis=1)
+        if modus == "kontrast":                                     # 50 % mellem 'over' og den stærkeste kontrast lige under
+            f = dd / max(dd[: len(dd) * 3 // 4].max(), 1e-9)
+        else:                                                       # 50 % mellem 'over' og farven i bunden af vinduet
+            f = dd / max(np.linalg.norm(col[-12:].mean(0) - over), 1e-9)
+        kr = np.nonzero((f[:-1] < 0.5) & (f[1:] >= 0.5))[0]
+        if not len(kr):
+            ys.append(np.nan); continue
+        j = kr[np.argmin(np.abs(t[kr] - yg))]
+        ys.append(t[j] + (0.5 - f[j]) / (f[j + 1] - f[j]) * 0.05)
+    ys = np.array(ys); ok = ~np.isnan(ys)
+    ys = np.interp(np.arange(len(ys)), np.nonzero(ok)[0], ys[ok])
+    return ndi.gaussian_filter1d(ndi.median_filter(ys, 5, mode="nearest"), 2, mode="nearest")
+
+
+# venstre side: taglinjens lyse kant (fra dørkanten til ærmet); højre side: den mørke kontur over den pink stribe
+_XV = np.arange(63.0, 107.01, 0.5)          # x < 63: dørhængslet dækker – linjen forlænges lige ud til dørkanten
+_YV = kant_lodret(_XV, lambda x: 280.3 + (x - 75) * 0.448, win=3.0)
+_a = np.polyfit(_XV[:20], _YV[:20], 1)
+BIL_TOP_V = [(x, float(np.polyval(_a, x))) for x in np.arange(55.0, 63.0, 0.5)] + list(zip(_XV, _YV))
+_XH = np.arange(254.0, 318.01, 0.5)          # x > 318: dørkarmen forstyrrer – linjen forlænges lige ud
+_YH = kant_lodret(_XH, lambda x: 320.5 + (x - 255) * 0.245, modus="fjern")
+_b = np.polyfit(_XH[-30:], _YH[-30:], 1)
+BIL_TOP_H = list(zip(_XH, _YH)) + [(x, float(np.polyval(_b, x))) for x in np.arange(318.5, 324.01, 0.5)]
+
+
+def bil_top(x):
+    """Bilens overkant i fotopixel; under figuren (skjult) en ret linje mellem de målte stykker."""
+    xv, yv = np.array(BIL_TOP_V).T; xh, yh = np.array(BIL_TOP_H).T
+    if x <= xv[-1]:
+        return float(np.interp(x, xv, yv))
+    if x >= xh[0]:
+        return float(np.interp(x, xh, yh))
+    return float(np.interp(x, [xv[-1], xh[0]], [yv[-1], yh[0]]))
+
+
+LIM = 3.0                                     # limkant: bygningerne går 3 px (ca. 9 mm) ind under bilen
+_top = lambda xa, xb, st=1.0: [(float(x), bil_top(x)) for x in np.arange(xa, xb + 1e-9, st)]
+# kølerhjelmen: overkanten er den målte tagkant (forruden ligger ovenpå som egen del); under kjolen fortsætter den lige
+reg("hjelmV", inc=[(70, 320)], mode="full", seed=(70, 320), smooth=0.02, ext=_top(55, 190) + [(190, 341), (55, 341)])
+reg("hjelmH", inc=[(300, 340)], mode="full", seed=(300, 340), smooth=0.02, ext=_top(244, 323) + [(323, 350), (244, 350)])
+# forruden (mørk med brune striber) mellem tagkanten og motorhjelmen – går ind under ærmet
+reg("rudeV", inc=[(60, 293), (60, 287), (75, 294), (90, 293)], seed=(75, 294), tol=50, blur=0.3, smooth=0.06, k=6,
+    ext=_top(55, 118, 0.5) + [(118, 304), (100, 306), (80, 309), (55, 311)], force=[[(98, bil_top(98) + 1.8), (118, bil_top(118) + 1.8), (118, 304), (98, 305.5)]])
+
 # ------------------------------------------------------------------ bygninger (målt kant for kant i fotoet; bunden går ind under bilen)
 B = 305
-BYG = {
-    "byV1": [(57, 228), (70, 228), (70, 243), (84, 243), (84, B), (57, B)],
-    "byV2": [(80, 225), (100, 225), (100, B), (80, B)],
-    "byV3": [(98, 243), (108, 243), (108, 258), (121, 258), (121, B), (98, B)],
-    "byH1": [(198, 268), (218, 268), (218, B), (198, B)],
-    "byH2": [(216, 255), (242, 255), (242, B), (216, B)],
-    "byH3": [(241, 227), (270, 227), (270, B), (241, B)],
-    "byH4": [(269, 253), (286, 253), (286, B), (269, B)],
-    "byH5": [(285, 232), (323, 232), (323, B), (285, B)],
+BYG = {   # kanterne er målt i fotoet (50 %-kanten, sub-pixel); hvor to bygninger har næsten samme farve, overlapper de lidt
+    "byV1": [(56.6, 228), (70.3, 228), (70.3, 242.9), (84, 242.9), (84, B), (56.6, B)],
+    "byV2": [(80.3, 225.2), (100.6, 225.2), (100.6, B), (80.3, B)],
+    "byV3": [(98, 242.7), (110.9, 242.7), (110.9, 256.8), (121, 256.8), (121, B), (98, B)],
+    "byH1": [(198.8, 268.6), (218, 268.6), (218, B), (198.8, B)],
+    "byH2": [(216.9, 254.2), (242, 254.2), (242, B), (216.9, B)],
+    "byH3": [(241, 226.7), (269.2, 226.7), (269.2, B), (241, B)],
+    "byH4": [(268.6, 255.6), (284.2, 255.6), (284.2, B), (268.6, B)],
+    "byH5": [(283.7, 229.8), (322.8, 229.8), (322.8, B), (283.7, B)],
 }
 for bid, pts in BYG.items():
-    reg(bid, inc=[pts[0]], mode="full", seed=((pts[0][0] + pts[1][0]) / 2, B - 5), smooth=0.02, ext=pts)
+    # bunden følger bilens målte overkant + limkant (i stedet for en vandret linje)
+    xa, xb = pts[0][0], max(x for x, _ in pts)
+    pts = [p for p in pts if p[1] != B] + [(x, y + LIM) for x, y in _top(xb, xa, -0.5)] + [(xa, bil_top(xa) + LIM)]
+    xm = (pts[0][0] + pts[1][0]) / 2
+    reg(bid, inc=[pts[0]], mode="full", seed=(xm, bil_top(xm) - 3), smooth=0.02, ext=pts)
 
 # vinduer: sporet på farven inde i en lille ramme
 for vid, (cx, cy) in {"vindue1": (86.3, 235.5), "vindue2": (94.3, 235.5), "vindue3": (94.3, 249.3),
@@ -242,3 +303,16 @@ ANSIGT_SPOR = {
 # skil = (bryn, øje): de to flyder sammen i fotoet – snitlinjen lægges i den lyseste linje mellem dem
 # hvid = øjets hvide tælles med (det slørede hvide spores i blå-kanalen, som huden næsten ikke har)
 # maxx = højre grænse (ansigtskanten/håret ved højre øje)
+
+# ------------------------------------------------------------------ ansigtet uden detaljer (ren skabelon)
+# Støttepunkter med uret; k = farvekant (hud mod hår/baggrund), l = mørk streg (kæbelinjen – hud mod hud).
+# Kurven trækkes ud på kanterne i fotoet af skabeloner.snap_profil(). Ørerne er med, øreringene ikke.
+ANSIGT_REN = [
+    ((143.6, 149.5), "k"), ((147.5, 146.0), "k"), ((152.0, 144.3), "k"), ((157.0, 143.6), "k"), ((162.0, 144.0), "k"),
+    ((166.5, 145.4), "k"), ((171.0, 145.9), "k"), ((175.5, 146.0), "k"), ((179.0, 147.4), "k"), ((181.3, 150.5), "k"),
+    ((182.2, 155.0), "k"), ((182.0, 159.5), "k"), ((181.0, 164.0), "k"), ((179.5, 168.5), "k"), ((177.3, 173.0), "k"),
+    ((174.3, 177.5), "k"), ((171.0, 181.5), "k"), ((167.5, 184.8), "k"), ((163.5, 186.6), "k"), ((159.5, 186.4), "l"),
+    ((156.0, 184.6), "l"), ((152.5, 182.0), "l"), ((149.0, 179.0), "l"), ((146.0, 176.0), "l"), ((143.8, 172.8), "l"),
+    ((142.2, 169.5), "k"), ((140.2, 167.6), "k"), ((138.4, 165.0), "k"), ((137.3, 161.0), "k"), ((136.9, 157.0), "k"),
+    ((137.8, 154.3), "k"), ((140.0, 153.4), "k"), ((142.0, 152.0), "k"),
+]
