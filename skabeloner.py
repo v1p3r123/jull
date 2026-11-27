@@ -391,6 +391,38 @@ def flake_template(spec):
                         "wedge_R": round(Rmax, 2), "model": model}
 
 
+def lys_samlet(out, ABS, door_x0, draw):
+    """Lucia-lysene: stage og flamme smeltes sammen til ét omrids pr. lys, og alle 5 lys samles i én skabelon."""
+    RES = 40                                              # pixel pr. cm
+    alle = []
+    for i in range(1, 6):
+        st = np.vstack(ABS[f"lys{i}"])               # stagen er et rektangel – kanten forneden er dækket af kransens blade,
+        xa, xb = np.percentile(st[:, 0], [4, 96])     # så den rettes op og forlænges 0,5 cm ned bag kransen (limkant)
+        ya, yb = st[:, 1].min(), st[:, 1].max() + 0.5
+        ps = [np.array([[xa, ya], [xb, ya], [xb, yb], [xa, yb]])] + ABS[f"flamme{i}"]
+        allp = np.vstack(ps); mn = allp.min(0) - 0.5; mx = allp.max(0) + 0.5
+        size = (int((mx[0] - mn[0]) * RES) + 1, int((mx[1] - mn[1]) * RES) + 1)
+        im = Image.new("L", size, 0); dr = ImageDraw.Draw(im)
+        for p in ps:
+            dr.polygon([((x - mn[0]) * RES, (y - mn[1]) * RES) for x, y in p], fill=255)
+        m = np.asarray(im) > 0
+        # vægen: flammen og stagen forbindes med en lukning (lukker smalle spalter mellem dem)
+        m = ndi.binary_closing(np.pad(m, 20), iterations=int(0.15 * RES))[20:-20, 20:-20]
+        sc = ndi.gaussian_filter(m.astype(float), 0.03 * RES)
+        polys = select(contours(sc), None, holes=False)
+        alle += [np.c_[q[:, 0] / RES + mn[0], q[:, 1] / RES + mn[1]] for q in [simplify(polys[0], 0.03 * RES)]]
+    allp = np.vstack(alle); mn, mx = allp.min(0), allp.max(0)
+    out["dele"]["lys"] = {"w": round(float(mx[0] - mn[0]), 2), "h": round(float(mx[1] - mn[1]), 2),
+                          "polys": [[[round(float(x - mn[0]), 3), round(float(y - mn[1]), 3)] for x, y in p] for p in alle],
+                          "pos_cm": [round(float(mn[0] - door_x0), 1), round(float(mn[1]), 1)]}
+    for i in range(1, 6):
+        out["dele"].pop(f"lys{i}", None); out["dele"].pop(f"flamme{i}", None)
+    for p in alle:
+        pts = [(x / CM_PR_PX * 4, y / CM_PR_PX * 4) for x, y in p]
+        draw.line(pts + [pts[0]], fill=(255, 0, 255), width=2)
+    print(f"lys          {out['dele']['lys']['w']:6.1f} x {out['dele']['lys']['h']:6.1f} cm  (5 lys med flamme)")
+
+
 def all_specs():
     import regioner as RG
     return SPECS + RG.R
@@ -404,6 +436,7 @@ def main(only=None):
     over = IMG.resize((W * 4, H * 4), Image.LANCZOS)
     d = ImageDraw.Draw(over)
     specs = all_specs()
+    ABS = {}                                  # absolutte konturer i cm (til sammensatte skabeloner)
     if only:
         specs = [sp for sp in specs if sp["id"] in only]
     for spec in specs:
@@ -427,10 +460,13 @@ def main(only=None):
             if "ring_cm" in extra:
                 entry["ring_cm"] = extra["ring_cm"]
         out["dele"][spec["id"]] = entry
+        ABS[spec["id"]] = polys
         for p in polys:
             pts = [(x / CM_PR_PX * 4, y / CM_PR_PX * 4) for x, y in p]
             d.line(pts + [pts[0]], fill=(0, 255, 255), width=2)
         print(f"{spec['id']:12s} {entry['w']:6.1f} x {entry['h']:6.1f} cm  ({len(polys)} kontur(er))")
+    if all(f"{a}{i}" in ABS for a in ("lys", "flamme") for i in range(1, 6)):
+        lys_samlet(out, ABS, door_x0, d)
     import regioner as RG
     for rid, rp in {**RG.RINGE, **RG.ANSIGT_DELE}.items():
         if only and rid not in only:

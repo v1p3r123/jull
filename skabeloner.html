@@ -50,11 +50,12 @@ body{margin:0;font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;color:#1
 const S = window.SKAB, D = S.dele, META = S.meta || {};
 const EXTRA_NAVN = {sneV:"Venstre juletræ – sne-hætter", sneH:"Højre juletræ – sne-hætter",
   granV:"Venstre juletræ – hele træet med stamme", granH:"Højre juletræ – hele træet med stamme",
-  sloejfe:"Rødt bånd – bælte, knude og bånd i ét", sol:"Solen – hele skiven med udskårne striber"};
-const EXTRA_G = {sneV:"graner", sneH:"graner", granV:"graner", granH:"graner", sloejfe:"sloejfe"};
+  sloejfe:"Rødt bånd – bælte, knude og bånd i ét", lys:"Lucia-lys – alle 5 lys, hvert med stage og flamme i ét", sol:"Solen – hele skiven med udskårne striber"};
+const EXTRA_G = {sneV:"graner", sneH:"graner", granV:"graner", granH:"graner", sloejfe:"sloejfe", lys:"krans"};
+const EXTRA_LAG = {lys:11};
 const navn = id => EXTRA_NAVN[id] || (META[id] && META[id].navn) || id;
 const gruppe = id => (META[id] && META[id].g) || EXTRA_G[id] || "";
-const lag = id => (META[id] && META[id].lag) || 4.5;
+const lag = id => (META[id] && META[id].lag) || EXTRA_LAG[id] || 4.5;
 const ALIAS = {juletraeer:["graner"], figur:["pistol","sloejfe"]};
 
 const q = new URLSearchParams(location.search);
