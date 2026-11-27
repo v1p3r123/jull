@@ -17,7 +17,12 @@ from scipy import ndimage as ndi
 import contourpy
 from matplotlib.path import Path as MPath
 
-ROOT = Path(__file__).resolve().parent.parent
+TOOLS = Path(__file__).resolve().parent
+# Virker både i den oprindelige mappestruktur (tools/ + skabeloner/) og når alle filer ligger i samme mappe
+if TOOLS.name == "tools" and (TOOLS.parent / "doer.png").exists():
+    ROOT, OUT = TOOLS.parent, TOOLS.parent / "skabeloner"
+else:
+    ROOT, OUT = TOOLS, TOOLS
 IMG = Image.open(ROOT / "doer.png").convert("RGB")
 W, H = IMG.size
 ARR = np.asarray(IMG).astype(float)
@@ -392,7 +397,7 @@ def all_specs():
 
 
 def main(only=None):
-    meta = json.loads((ROOT / "tools" / "dele.json").read_text(encoding="utf-8"))
+    meta = json.loads((TOOLS / "dele.json").read_text(encoding="utf-8"))
     out = {"cm_pr_px": CM_PR_PX, "motiv_cm": [DOOR_W_CM, (99 / 100 * H) * CM_PR_PX], "dele": {},
            "meta": {k: {"navn": v["navn"], "g": v["g"], "lag": v["lag"]} for k, v in meta.items()}}
     door_x0 = DOOR_X1 / 100 * W * CM_PR_PX
@@ -427,7 +432,7 @@ def main(only=None):
             d.line(pts + [pts[0]], fill=(0, 255, 255), width=2)
         print(f"{spec['id']:12s} {entry['w']:6.1f} x {entry['h']:6.1f} cm  ({len(polys)} kontur(er))")
     import regioner as RG
-    for rid, rp in RG.RINGE.items():
+    for rid, rp in {**RG.RINGE, **RG.ANSIGT_DELE}.items():
         if only and rid not in only:
             continue
         polys = [np.array([(x * CM_PR_PX, y * CM_PR_PX) for x, y in q]) for q in rp]
@@ -440,12 +445,12 @@ def main(only=None):
             d.line(pts + [pts[0]], fill=(0, 255, 255), width=2)
     if only:
         return out
-    (ROOT / "skabeloner").mkdir(exist_ok=True)
+    OUT.mkdir(exist_ok=True)
     txt = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
-    (ROOT / "skabeloner" / "skabeloner.json").write_text(txt, encoding="utf-8")
+    (OUT / "skabeloner.json").write_text(txt, encoding="utf-8")
     # samme data som script, så siderne også virker ved dobbeltklik (file://)
-    (ROOT / "skabeloner" / "skabeloner.js").write_text("window.SKAB=" + txt + ";", encoding="utf-8")
-    over.save(ROOT / "tools" / "kontrol.png")
+    (OUT / "skabeloner.js").write_text("window.SKAB=" + txt + ";", encoding="utf-8")
+    over.save(TOOLS / "kontrol.png")
     print("motiv:", out["motiv_cm"])
 
 

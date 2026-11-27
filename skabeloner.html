@@ -147,11 +147,18 @@ function itemOps(it,x,y){
    Sidelayout: A4-sider først, så A3-sider, så delte A3-ark
    =============================================================== */
 const pages=[];
+/* Små dele (fx ansigtsdetaljer) er smallere end deres navn – pladsen regnes ud fra det bredeste af form og tekst */
+const _ctx=document.createElement("canvas").getContext("2d");
+function lblW(it){
+  _ctx.font="bold 32px Inter, Segoe UI, Arial, sans-serif";
+  const t=it.kind==="fold" ? navn(it.id)+" – foldeskabelon" : navn(it.id);
+  return _ctx.measureText(t).width/100*1.05;
+}
 function pack(F, list){
   let cur=null, sx=0, sy=0, rowH=0;
   const AH=areaH(F);
   list.sort((a,b)=>b.h-a.h).forEach(it=>{
-    const w=it.w, h=it.h+LBL;
+    const w=Math.min(F.W, Math.max(it.w, lblW(it))), h=it.h+LBL;
     if(!cur){cur={F,items:[]};pages.push(cur);sx=0;sy=0;rowH=0;}
     if(sx+w>F.W){ sx=0; sy+=rowH+GAP; rowH=0; }
     if(sy+h>AH){ cur={F,items:[]};pages.push(cur); sx=0; sy=0; rowH=0; }

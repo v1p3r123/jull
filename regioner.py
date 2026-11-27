@@ -170,3 +170,52 @@ def ring(cx, cy, rx, ry, t, n=72):
 
 # øreringe: guldringe målt i fotoet (ydre ellipse + hul)
 RINGE = {"oereV": ring(140.5, 173.0, 4.3, 5.8, 1.2), "oereH": ring(178.5, 177.5, 3.6, 5.0, 1.1), "sol": SOL_POLYS}
+
+
+# ------------------------------------------------------------------ ansigtsdetaljer (målt punkt for punkt i fotoet)
+# Ansigtet er kun ca. 50 px bredt i fotoet, og øjne/bryn flyder sammen i farve – derfor er hver detalje
+# målt som støttepunkter langs kanten og glattet med en lukket Catmull-Rom-kurve (samme metode som solen og bygningerne).
+def glat(pts, n=10):
+    """Lukket, blød kurve gennem støttepunkterne (Catmull-Rom)."""
+    P = np.array(pts, float); k = len(P); out = []
+    for i in range(k):
+        p0, p1, p2, p3 = P[i - 1], P[i], P[(i + 1) % k], P[(i + 2) % k]
+        for t in np.linspace(0, 1, n, endpoint=False):
+            t2, t3 = t * t, t * t * t
+            out.append(0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3))
+    return [tuple(map(float, q)) for q in out]
+
+
+def cirkel(cx, cy, r, n=48):
+    return [(cx + r * _m.cos(2 * _m.pi * i / n), cy + r * _m.sin(2 * _m.pi * i / n)) for i in range(n)]
+
+
+MUNDLINJE = [(170.8, 178.2), (168.0, 178.4), (165.0, 178.7), (162.0, 178.4), (158.2, 177.7)]   # højre → venstre
+ANSIGT_DELE = {
+    # øjenbryn: tykke og skrå (vred mine) – den indre ende ved næsen er lavest
+    "brynV": [glat([(150.2, 155.7), (152.2, 154.4), (155.0, 154.0), (158.2, 154.7), (161.3, 155.8), (164.2, 157.2), (166.6, 159.1),
+                    (165.8, 160.3), (163.2, 159.6), (160.2, 158.4), (157.2, 157.3), (154.2, 156.5), (151.6, 156.4)])],
+    "brynH": [glat([(169.4, 160.6), (171.8, 159.3), (174.8, 158.1), (177.8, 157.3), (180.4, 157.4), (181.7, 158.3),
+                    (180.2, 159.0), (177.2, 159.4), (174.3, 160.0), (171.8, 160.8), (170.0, 161.4)])],
+    # øjne: hele mandelformen inkl. den tykke vippe-streg foroven
+    "oejeV": [glat([(150.4, 159.0), (152.4, 157.9), (155.0, 157.7), (158.0, 158.5), (160.6, 159.6), (162.6, 161.2),
+                    (161.6, 162.5), (159.0, 162.9), (156.0, 162.6), (153.0, 161.6), (151.0, 160.2)])],
+    "oejeH": [glat([(169.4, 161.4), (172.0, 160.6), (175.0, 160.8), (178.0, 161.4), (180.4, 162.6),
+                    (179.2, 164.0), (176.2, 164.9), (173.0, 164.8), (170.8, 163.8), (169.6, 162.6)])],
+    # iris (mørkebrun cirkel) – sidder mellem det hvide på begge sider
+    "irisV": [cirkel(156.9, 160.6, 1.75)],
+    "irisH": [cirkel(174.0, 162.6, 1.65)],
+    # næse: omrids fra næseryg til næsetip (skygge-/tegneskabelon) og den mørke underside med næsebor
+    "naese": [glat([(164.3, 162.8), (166.9, 162.8), (168.0, 166.5), (169.2, 170.0), (170.4, 172.4), (169.6, 174.2), (167.2, 174.9),
+                    (164.2, 174.7), (162.2, 173.6), (161.6, 171.6), (162.8, 169.4), (163.6, 166.0)])],
+    "naesebor": [glat([(161.6, 171.4), (163.2, 170.9), (165.0, 171.9), (167.2, 172.2), (169.2, 171.7), (170.3, 172.6),
+                       (169.6, 174.1), (167.2, 174.8), (164.2, 174.6), (162.4, 173.5)])],
+    # læber: overlæbe (mørkest) og underlæbe; underlæben går 1 px op under overlæben (limkant)
+    "overlaebe": [glat([(158.2, 177.7), (159.6, 176.5), (162.0, 175.6), (164.2, 175.9), (165.4, 175.5), (167.5, 175.7),
+                        (169.5, 176.8), (170.8, 178.2)] + MUNDLINJE[1:-1], n=8)],
+    "underlaebe": [glat([(158.2, 177.2), (161.0, 177.5), (165.0, 177.8), (168.0, 177.5), (170.8, 177.4),
+                         (170.6, 178.4), (169.8, 179.8), (168.0, 181.0), (165.5, 181.6), (163.0, 181.1), (160.5, 179.8), (158.8, 178.4)], n=8)],
+    # øret (venstre side af billedet) – sidder i ansigtsskabelonen, men er her som separat tegne-/skyggeskabelon
+    "oere": [glat([(138.5, 154.6), (140.5, 153.7), (142.5, 154.2), (143.8, 156.0), (144.2, 159.0), (143.8, 162.5), (142.6, 165.2),
+                   (141.0, 166.8), (139.5, 166.4), (138.8, 164.5), (137.8, 161.5), (136.8, 158.0), (137.2, 155.8)])],
+}
